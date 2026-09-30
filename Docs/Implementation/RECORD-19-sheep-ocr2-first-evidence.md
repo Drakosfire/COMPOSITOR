@@ -1,0 +1,25 @@
+# Sheep v2: frozen gold and first owner A/B evidence
+
+Status: source recovery measured; task competence unjudged. This record is a source-safe index to private evidence. It contains no adventure text, PDF pages, gold cases, or image bytes.
+
+## Exact source and independent gold
+
+The selected source for this run is Winghorn Press's [publicly offered v2 PDF](https://winghornpress.com/adventures/a-wild-sheep-chase/), six physical pages, SHA-256 `a92a7d6f67432dfacd935161a7c90a6ec9ba7f4fc636a8e8f09537070bbdeeb6`. The private source manifest is `f26f060887251215d32903c48eb06eec3fe5c6516dde86049494a0c0e196d764`. The operator's previously mentioned local PDF and processed Markdown were not located. This publisher PDF is an explicitly pinned selection, not a claim that those copies are identical. Source and derived material remain in ignored `.local/private/`; free download does not establish permission to redistribute them.
+
+A distinct Sheep gold author drafted 55 cases from the PDF. The challenger found five freeze blockers in v1; the author revised them in v2 and supplied case-specific rationales and unresolved rule-printing context in v3. The challenger rechecked each revision. The COMPOSITOR parent inspected all six rendered pages and every critical case against its source and the accepted Composition contract, then froze v3 before scoring. Frozen gold SHA-256 is `a5a74042ab1ba1afddabb4dce87a2ccacb3925b21d2a3d87a4aa36e5e596e8de`; freeze record is `077b93004be8acd7457de27ef7954c40f594bc4836a1e6c48e44f7f7f98ab073`. Its denominator is **48 source-fidelity cases plus seven separately labeled integration-contract witnesses**. Seven cases are critical. The integration witnesses require immutable package and owner runtime pins before execution. The exact PHB/MM printings remain unresolved; the adventure's page citations are historical locators, not verified current-edition bindings.
+
+## Bounded treatment and package replay
+
+PRIME granted a one-pass owner lease on the accepted RulesIngestion ref `17854ad6eaf9aa8bdfc483f8c3eb0a6099f0bbd8`. The run used **DeepSeek OCR 2** locally at 200 DPI with the accepted grounding prompt, at most one invocation per page, and no retries. All six invocations completed; there were **zero external provider calls and $0 provider spend**. The unedited private owner receipt is `9fae3d721a53007049600753cb135068bd94e28c99664f020ba7941509c15cb2`; all 94 transferred owner artifact files passed individual hash checks. The raw first-result freeze is `821a0a36da1c80a6a0fcf266e856ebd8827b28bafbe4111f7d780fc829e96f24` and predates gold scoring. All Stage A/B gates passed and Stage B emitted 135 evidence units.
+
+COMPOSITOR imported the pinned owner artifacts through `load_evidence_draft`. The owner wrapper manifest is `76a88ed1830c8108b1ef677e7a6ad6a918519e6d11a6dfd64386a58a22a22164`; deterministic replay matched source package revision `f64c1a2d1f8feab2ecb39f455747b7398ce94c3b2add17530a86838f5bd36ba4`. It has 135 GM-scoped text evidence resources, **zero** explicit relationships, dependencies, or rule bindings, and an asset-inventory-pending diagnostic. It is inspectable source evidence, not a ready Worldbuilding, Planning, Playing, or Rules Lawyer package.
+
+A separate zero-model `pdftotext -layout` first result was frozen at `7fce6e3337389f4e33f1cebc52b358c58b2b137b7d3fbd3412a9b59b80e19d42`. The two-column pages and statblocks need separate layout review before that baseline can be credited with usable recovery. It has not been gold-scored.
+
+## Source-retention review and failures
+
+All 55 gold cases have page-local owner evidence. A manual source-retention review covers the 48 source-fidelity cases, pinned by private index `720b8a8eab9cc844b1e7f41eb2e2bfcc287d830c73fc6aa3b45aae22288e83b5`: **38 broadly present, six partial, four image-dependent cases unsupported**. “Present” includes text-only and reference-only qualifications; it is not a task pass. All seven integration cases and all task verdicts remain unjudged.
+
+The partial cases include a truncated Noke ability table, an OCR error in the Bed Dragon's Dexterity save, an OCR error in a monster name on the wand page, source layout convention without box typing, Guz's internally inconsistent printed ability modifier without a conflict flag, and the wand's two ending descriptions without an explicit ambiguity relationship. The four unsupported cases are the tactical map and three decorative images; OCR image placeholders do not supply verified image bytes. The private owner repro revision `def8f041259fc193e80ebb0e38a24fa2c6690323683e3f1f044404bbd0017c0b` pins three OCR errors for RulesIngestion owner review. Gate passage did not catch them. No repair has been mixed into this first result.
+
+Next evaluation work is a separate asset treatment, source-specific repair tracking, and task adjudication at the actual Worldbuilding, Planning, Playing, and rule-consumer boundaries. The Conks and Sheep denominators remain separate. No acceptance threshold or consumer success is inferred from page coverage.
