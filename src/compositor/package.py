@@ -217,7 +217,9 @@ def readiness(issues: list[dict[str, Any]]) -> dict[str, str]:
         "worldbuilding": "limited" if kinds & {"missing_base", "unresolved_rule", "unresolved_relationship",
                                             "missing_page", "missing_asset", "missing_artifact",
                                             "missing_source", "gate_failure", "evidence_mismatch",
-                                            "asset_inventory_pending"} else "usable",
+                                            "asset_inventory_pending", "interpretation_pending",
+                                            "partial_source_scope", "table_cell_review_pending",
+                                            "source_correspondence_unverified"} else "usable",
         "planning": "limited" if kinds else "usable",
         "playing": "limited" if kinds else "usable",
     }
