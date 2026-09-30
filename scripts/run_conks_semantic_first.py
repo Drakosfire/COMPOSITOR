@@ -13,6 +13,7 @@ from hashlib import sha256
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 from typing import Any
@@ -74,8 +75,39 @@ def _recipe_digest(ge_ref: str) -> str:
     return sha256(json.dumps(pins, sort_keys=True).encode()).hexdigest()
 
 
+def validate_exposure_approval(path: Path, *, private_root: Path, run_id: str,
+                               source_manifest_sha256: str, evidence_manifest_sha256: str,
+                               supplied_markdown_sha256: str) -> str:
+    """Require a current, exact private operator approval before any live work."""
+    if not path.resolve().is_relative_to(private_root.resolve()):
+        raise ValueError("exposure approval must be inside private root")
+    record = _json(path)
+    expected = {"kind": "source_to_provider_exposure", "approved": True,
+                "approved_by": "operator", "run_id": run_id,
+                "source_manifest_sha256": source_manifest_sha256,
+                "evidence_manifest_sha256": evidence_manifest_sha256,
+                "supplied_markdown_sha256": supplied_markdown_sha256,
+                "destination": "openai", "model": MODEL,
+                "payload": "supplied_markdown_page_text", "printed_pages": list(range(2, 21))}
+    for key, value in expected.items():
+        if record.get(key) != value:
+            raise ValueError(f"exposure approval {key} does not match this run")
+    if not isinstance(record.get("approval_text"), str) or not record["approval_text"].strip():
+        raise ValueError("exposure approval needs the operator's actual approval text")
+    try:
+        approved_at = datetime.fromisoformat(record["approved_at_utc"])
+        valid_until = datetime.fromisoformat(record["valid_until_utc"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError("exposure approval needs dated bounds") from exc
+    now = datetime.now(timezone.utc)
+    if (approved_at.tzinfo is None or valid_until.tzinfo is None
+            or not approved_at <= now < valid_until):
+        raise ValueError("exposure approval is not currently valid")
+    return digest(path)
+
+
 def preflight(args: argparse.Namespace) -> tuple[Path, list[dict[str, Any]], dict[str, Any],
-                                                 list[dict[str, Any]], str]:
+                                                 list[dict[str, Any]], str, str]:
     private_root = args.private_root.resolve()
     out = run_output_dir(private_root, args.run_id)
     database = args.database.resolve()
@@ -100,27 +132,41 @@ def preflight(args: argparse.Namespace) -> tuple[Path, list[dict[str, Any]], dic
     if substrate.get("gold_sha256") != digest(args.gold):
         raise ValueError("frozen gold differs from substrate pin")
     evidence_dir = args.substrate_dir / "evidence/supplied_markdown"
+    evidence_manifest = _json(evidence_dir / "manifest.json")
     if substrate.get("evidence_manifest_sha256") != digest(evidence_dir / "manifest.json"):
         raise ValueError("evidence manifest differs from substrate pin")
+    markdown_sha = evidence_manifest.get("supplied_markdown_sha256")
+    if not isinstance(markdown_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", markdown_sha):
+        raise ValueError("evidence manifest lacks exact supplied Markdown digest")
     pages = read_page_evidence(evidence_dir)
     base_package = JsonPackageStore(args.substrate_dir / "packages").load(substrate["package_ref"])
     ge_ref = _ge_ref(args.generation_engine_root.resolve())
     if ge_ref != args.expected_ge_ref:
         raise ValueError("GenerationEngine ref differs from pinned expected ref")
-    return out, pages, substrate, base_package.get("diagnostics", []), ge_ref
+    return out, pages, substrate, base_package.get("diagnostics", []), ge_ref, markdown_sha
 
 
 async def _run(args: argparse.Namespace) -> None:
-    out, pages, substrate, diagnostics, ge_ref = preflight(args)
+    out, pages, substrate, diagnostics, ge_ref, markdown_sha = preflight(args)
     recipe_sha = _recipe_digest(ge_ref)
+    approval_sha = None
+    if args.exposure_approval is not None:
+        approval_sha = validate_exposure_approval(
+            args.exposure_approval, private_root=args.private_root, run_id=args.run_id,
+            source_manifest_sha256=digest(args.source_manifest),
+            evidence_manifest_sha256=substrate["evidence_manifest_sha256"],
+            supplied_markdown_sha256=markdown_sha)
     if args.preflight:
         print(json.dumps({"preflight": "passed", "pages": len(pages), "model": MODEL,
                           "logical_call_cap": CALL_CAP,
                           "provider_attempt_ceiling": PROVIDER_ATTEMPT_CEILING,
                           "spend_cap_usd": SPEND_CAP_USD,
                           "max_output_tokens": MAX_OUTPUT_TOKENS, "ge_ref": ge_ref,
+                          "exposure_approval_valid": approval_sha is not None,
                           "recipe_sha256": recipe_sha}, sort_keys=True))
         return
+    if approval_sha is None:
+        raise ValueError("live run requires exact current private exposure approval")
     os.environ["OPENAI_API_KEY"] = _env_key(args.env_file)
     sys.path.insert(0, str(args.generation_engine_root.resolve() / "src"))
     import generationengine
@@ -193,7 +239,7 @@ async def _run(args: argparse.Namespace) -> None:
         ledger.record_artifact(run_id=args.run_id, role="call_manifest", name="primary",
                                path=call_manifest_path)
         package, counts = assemble_first_result(pages=pages, outputs=outputs,
-                                                 source_id="of-conks-cons-v21-supplied-markdown",
+                                                 source_id=f"sha256:{markdown_sha}",
                                                  store=JsonPackageStore(out / "packages"),
                                                  package_id=f"conks-semantic-{args.run_id}",
                                                  inherited_diagnostics=diagnostics)
@@ -212,9 +258,11 @@ async def _run(args: argparse.Namespace) -> None:
                     + observed_output * 1.20) / 1_000_000
         report = {"run_id": args.run_id, "created_at_utc": datetime.now(timezone.utc).isoformat(),
                   "source_manifest_sha256": digest(args.source_manifest),
+                  "supplied_markdown_sha256": markdown_sha,
                   "frozen_gold_sha256": digest(args.gold), "substrate_run_id": substrate["run_id"],
                   "substrate_evidence_manifest_sha256": substrate["evidence_manifest_sha256"],
                   "generation_engine_ref": ge_ref, "recipe_sha256": recipe_sha,
+                  "exposure_approval_sha256": approval_sha,
                   "call_manifest_sha256": digest(call_manifest_path),
                   "provider_exposure": "approved_private_api", "provider": "openai", "model": MODEL,
                   "call_cap": CALL_CAP, "spend_cap_usd": SPEND_CAP_USD,
@@ -249,6 +297,7 @@ def main() -> None:
     parser.add_argument("--generation-engine-root", type=Path, required=True)
     parser.add_argument("--expected-ge-ref", required=True)
     parser.add_argument("--env-file", type=Path, required=True)
+    parser.add_argument("--exposure-approval", type=Path)
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--preflight", action="store_true")
     asyncio.run(_run(parser.parse_args()))
