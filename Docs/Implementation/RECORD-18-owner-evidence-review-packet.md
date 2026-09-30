@@ -1,0 +1,9 @@
+# Owner A/B first-result review packet
+
+Status: public synthetic implementation for PRIME review. This slice follows the accepted owner A/B import and first-result freeze. It consumes a closed private experiment run; it does not call an OCR model, change owner artifacts, or publish a real source.
+
+`build_owner_review_packet` verifies the exact first-result, frozen gold, and gold freeze-record hashes through the existing coverage evaluator. It maps printed gold pages to physical owner pages, includes the corresponding source-package resources and diagnostics, and carries the package, evidence manifest, source, and provider-usage pins. Page evidence only suggests candidates. Every review starts blank, including cases with recovered pages. Image-dependent cases remain explicitly `unsupported_image_evidence` for this text route.
+
+`scripts/review_owner_evidence_first.py prepare` writes the packet privately under `reviews/<run-id>/owner-evidence/`. The operator reviews it against the source and the actual Worldbuilding, Planning, or Playing boundary, then fills each `review` with a verdict, reviewer, rationale, and cited resource IDs. `finalize` reconstructs the expected packet from the recorded first result and frozen gold, rejects changed context or missing judgments, writes an immutable adjudication, and records judgments and artifact hash in the private SQLite ledger. An unresolved verdict is appropriate when a source-only package cannot establish a task outcome. Source retention and consumer readiness remain separate findings.
+
+The public test uses only the authored North Mill fixture. It checks an unjudged packet, scoped and image case states, failure on incomplete or tampered review, and persistent finalization. A real run's packet includes private source text and belongs only under `.local/private/`; this PR contains no adventure bytes, gold, verdicts, or derived results.

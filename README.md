@@ -44,6 +44,8 @@ The kernel needs Python 3.11 or newer and has no runtime dependencies. Run its c
 
 `JsonPackageStore` writes immutable, content-addressed revisions beneath an explicit directory. `load_evidence_draft` reads pinned Stage A/B artifacts, preserves unit locators and recovery route, and exposes missing pages/assets and failed gates without hiding the available draft. `SQLiteExperimentLedger` records exact run pins, immutable private artifact references, judgments, and bounded provider receipts. Keep real-source stores and the database under `.local/private/`, not `fixtures/public/`. The [package-cycle record](Docs/Implementation/RECORD-01-package-cycle.md), [document-to-draft record](Docs/Implementation/RECORD-02-document-to-draft.md), [ledger record](Docs/Implementation/RECORD-03-experiment-ledger.md), and [first private evidence record](Docs/Implementation/RECORD-04-conks-offline-evidence.md) give the exact scopes, smoke checks, and limits.
 
+The [owner A/B review packet](Docs/Implementation/RECORD-18-owner-evidence-review-packet.md) prepares source-page candidates from a frozen first result and frozen gold. It leaves task verdicts blank until a reviewer checks the source and intended consumer behavior; private packets and judgments stay outside Git.
+
 ## Open-source status
 
 The project is intended to be public open-source software. A license has not yet been selected for this repository; until one is added, do not assume the code is licensed for reuse. Contributions and redistribution guidance will follow that decision.
