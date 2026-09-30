@@ -58,6 +58,8 @@ def load_evidence_draft(store: JsonPackageStore, bundle_dir: Path, *,
     if manifest.get("rules_ingestion_ref") != expected_rules_ingestion_ref:
         raise CompositionError("RulesIngestion contract revision mismatch")
     route = manifest["route"]
+    direct_source_sha256 = (manifest["supplied_markdown_sha256"]
+                            if route == "supplied_markdown" else manifest["source_pdf_sha256"])
     diagnostics: list[dict[str, Any]] = []
     _check_source(project_root, manifest["source_pdf"], manifest["source_pdf_sha256"], diagnostics)
     if route == "supplied_markdown":
@@ -111,16 +113,19 @@ def load_evidence_draft(store: JsonPackageStore, bundle_dir: Path, *,
                                     "unit_id": uid, "reason": "fingerprint, line span, or unit identity"})
                 continue
             heading = " / ".join(unit["structural_path"]) or f"Page {page_index + 1}"
+            origin = {
+                "type": "source", "source_id": f"sha256:{direct_source_sha256}",
+                "locator": f"{route}/{page['artifact_dir']}/stageB.evidence_units.json#/units/{offset}",
+                "page_index": page_index, "source_line_start": start,
+                "source_line_end": end, "page_fingerprint": page["page_fingerprint"],
+                "content_version": unit.get("content_version", ""),
+            }
+            if route == "supplied_markdown":
+                origin["associated_pdf_sha256"] = manifest["source_pdf_sha256"]
             resources[uid] = {
                 "id": uid, "kind": f"evidence_{unit['unit_type']}", "name": heading,
                 "text": unit["text"], "audience": "GM",
-                "origin": {
-                    "type": "source", "source_id": f"sha256:{manifest['source_pdf_sha256']}",
-                    "locator": f"{route}/{page['artifact_dir']}/stageB.evidence_units.json#/units/{offset}",
-                    "page_index": page_index, "source_line_start": start,
-                    "source_line_end": end, "page_fingerprint": page["page_fingerprint"],
-                    "content_version": unit.get("content_version", ""),
-                },
+                "origin": origin,
             }
     package = make_source_package(store, package_id=package_id, title=title,
                                   resources=resources, diagnostics=diagnostics)
@@ -128,6 +133,8 @@ def load_evidence_draft(store: JsonPackageStore, bundle_dir: Path, *,
         "route": route, "recovery_method": manifest["recovery_method"],
         "rules_ingestion_ref": manifest["rules_ingestion_ref"],
         "source_pdf_sha256": manifest["source_pdf_sha256"],
+        "supplied_markdown_sha256": manifest.get("supplied_markdown_sha256"),
+        "direct_source_sha256": direct_source_sha256,
         "unit_count": len(resources), "gate_report": gate_report,
         "diagnostics": deepcopy(diagnostics), "provider_calls": manifest["provider_calls"],
     })

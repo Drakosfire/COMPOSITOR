@@ -55,11 +55,21 @@ class EvidenceAdapterTest(unittest.TestCase):
             self.assertEqual(content["issues"], [])
             self.assertEqual(result.report["provider_calls"], 0)
             self.assertTrue(all(gate["passed"] for gate in result.report["gate_report"]))
+            pdf_sha = digest(ROOT / "fixtures/public/windmill-field-notes.pdf")
+            markdown_sha = digest(ROOT / "fixtures/public/windmill-field-notes.md")
+            direct_sha = pdf_sha if route == "pdf_text" else markdown_sha
+            self.assertEqual(result.report["direct_source_sha256"], direct_sha)
+            self.assertEqual(result.report["source_pdf_sha256"], pdf_sha)
+            self.assertEqual(result.report["supplied_markdown_sha256"],
+                             markdown_sha if route == "supplied_markdown" else None)
             text = "\n".join(resource["text"] for resource in content["resources"].values())
             for phrase in PHRASES:
                 self.assertIn(phrase, text)
             for resource in content["resources"].values():
                 origin = resource["origin"]
+                self.assertEqual(origin["source_id"], f"sha256:{direct_sha}")
+                self.assertEqual(origin.get("associated_pdf_sha256"),
+                                 pdf_sha if route == "supplied_markdown" else None)
                 locator, pointer = origin["locator"].split("#")
                 artifact = json.loads((EVIDENCE / locator).read_text(encoding="utf-8"))
                 index = int(pointer.removeprefix("/units/"))
