@@ -39,6 +39,10 @@ def _write_new(path: Path, value: dict[str, Any]) -> None:
         stream.write("\n")
 
 
+def _encoded(value: dict[str, Any]) -> str:
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+
+
 def _expected_packet(ledger: SQLiteExperimentLedger, *, run_id: str,
                      gold_path: Path) -> dict[str, Any]:
     row = ledger.connection.execute(
@@ -87,19 +91,37 @@ def review_benchmark(*, mode: str, private_root: Path, database: Path,
             raise CompositionError("mode must be prepare or finalize")
         edited = _json(draft_path)
         summary = validate_review_packet(edited, expected=expected, require_complete=True)
-        if final_path.exists():
-            raise CompositionError("adjudication artifact already exists")
         artifact = {"format_version": 1, "packet": edited, "summary": summary,
                     "status": "complete_reviewed", "score_basis": "assembled_first_package"}
-        _write_new(final_path, artifact)
+        if final_path.exists():
+            if final_path.read_text(encoding="utf-8") != _encoded(artifact):
+                raise CompositionError("existing adjudication has different bytes")
+        else:
+            _write_new(final_path, artifact)
+        recorded = ledger.connection.execute("""
+            SELECT 1 FROM artifacts WHERE run_id = ? AND role = 'gold_adjudication'
+              AND name = 'primary'
+        """, (run_id,)).fetchone()
+        if recorded is not None:
+            if ledger.verify_artifact(run_id=run_id, role="gold_adjudication",
+                                      name="primary") != final_path:
+                raise CompositionError("recorded adjudication path differs")
+            return {"mode": "finalize", "run_id": run_id, "summary": summary,
+                    "artifact_path": str(final_path), "already_finalized": True}
         db = ledger.connection
         db.execute("BEGIN IMMEDIATE")
         try:
             for case in edited["cases"]:
                 review = case["review"]
-                ledger.record_judgment(run_id=run_id, case_id=case["id"],
-                                       result_role="assembled_package", verdict=review["verdict"],
-                                       reviewer=review["reviewer"], rationale=review["rationale"])
+                existing = db.execute("""SELECT verdict, rationale FROM judgments
+                    WHERE run_id = ? AND case_id = ? AND result_role = 'assembled_package'
+                      AND reviewer = ?""", (run_id, case["id"], review["reviewer"])).fetchone()
+                if existing is None:
+                    ledger.record_judgment(run_id=run_id, case_id=case["id"],
+                                           result_role="assembled_package", verdict=review["verdict"],
+                                           reviewer=review["reviewer"], rationale=review["rationale"])
+                elif existing["verdict"] != review["verdict"] or existing["rationale"] != review["rationale"]:
+                    raise CompositionError(f"conflicting existing judgment for {case['id']}")
             ledger.record_artifact(run_id=run_id, role="gold_adjudication", name="primary",
                                    path=final_path)
             db.execute("COMMIT")

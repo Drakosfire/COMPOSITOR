@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 
 from compositor.experiment_ledger import SQLiteExperimentLedger
 from compositor.package import CompositionError, JsonPackageStore, make_source_package
@@ -64,14 +65,43 @@ class PrivateBenchmarkReviewTest(unittest.TestCase):
                                              "rationale": "The source and package both state Nar has a key.",
                                              "resource_ids": ["nar"]}
             write_json(draft_path, draft)
+            original_record = SQLiteExperimentLedger.record_artifact
+            failed_once = False
+
+            def fail_adjudication_once(ledger, *, run_id, role, name, path):
+                nonlocal failed_once
+                if role == "gold_adjudication" and not failed_once:
+                    failed_once = True
+                    raise RuntimeError("synthetic ledger insertion failure")
+                return original_record(ledger, run_id=run_id, role=role, name=name, path=path)
+
+            with patch.object(SQLiteExperimentLedger, "record_artifact", fail_adjudication_once):
+                with self.assertRaisesRegex(RuntimeError, "synthetic ledger insertion failure"):
+                    review_benchmark(mode="finalize", private_root=root, database=db_path,
+                                     run_id=run_id, gold_path=gold_path)
+            final_path = root / "reviews" / run_id / "adjudication.json"
+            first_bytes = final_path.read_bytes()
+            with SQLiteExperimentLedger(db_path, private_root=root) as ledger:
+                self.assertEqual(ledger.connection.execute(
+                    "SELECT COUNT(*) FROM judgments WHERE run_id = ?", (run_id,)).fetchone()[0], 0)
+                self.assertEqual(ledger.connection.execute(
+                    "SELECT COUNT(*) FROM artifacts WHERE run_id = ? AND role = 'gold_adjudication'",
+                    (run_id,)).fetchone()[0], 0)
+                ledger.record_judgment(run_id=run_id, case_id="F001", result_role="assembled_package",
+                                       verdict="pass", reviewer="parent",
+                                       rationale="The source and package both state Nar has a key.")
             finalized = review_benchmark(mode="finalize", private_root=root, database=db_path,
                                          run_id=run_id, gold_path=gold_path)
             self.assertEqual(finalized["summary"]["reviewed"], 1)
+            self.assertEqual(final_path.read_bytes(), first_bytes)
             with SQLiteExperimentLedger(db_path, private_root=root) as ledger:
                 self.assertEqual(ledger.verify_artifact(run_id=run_id, role="gold_adjudication",
                                                         name="primary"), Path(finalized["artifact_path"]))
                 self.assertEqual(ledger.connection.execute(
                     "SELECT COUNT(*) FROM judgments WHERE run_id = ?", (run_id,)).fetchone()[0], 1)
+            self.assertTrue(review_benchmark(mode="finalize", private_root=root,
+                                             database=db_path, run_id=run_id,
+                                             gold_path=gold_path)["already_finalized"])
 
 
 if __name__ == "__main__":
