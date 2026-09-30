@@ -60,7 +60,7 @@ def load_evidence_draft(store: JsonPackageStore, bundle_dir: Path, *,
     route = manifest["route"]
     direct_source_sha256 = (manifest["supplied_markdown_sha256"]
                             if route == "supplied_markdown" else manifest["source_pdf_sha256"])
-    diagnostics: list[dict[str, Any]] = []
+    diagnostics: list[dict[str, Any]] = deepcopy(manifest.get("known_omissions", []))
     _check_source(project_root, manifest["source_pdf"], manifest["source_pdf_sha256"], diagnostics)
     if route == "supplied_markdown":
         _check_source(project_root, manifest["supplied_markdown"],

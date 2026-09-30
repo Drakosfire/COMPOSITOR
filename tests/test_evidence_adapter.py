@@ -85,6 +85,8 @@ class EvidenceAdapterTest(unittest.TestCase):
         manifest = json.loads(manifest_path.read_text())
         manifest["expected_page_indices"] = [0, 1]
         manifest["expected_assets"] = ["fixtures/public/absent-map.png"]
+        manifest["known_omissions"] = [{"kind": "asset_inventory_pending",
+                                        "reason": "Synthetic inventory witness"}]
         manifest_path.write_text(json.dumps(manifest))
         units_path = copied / "page-0/stageB.evidence_units.json"
         units = json.loads(units_path.read_text())
@@ -99,7 +101,8 @@ class EvidenceAdapterTest(unittest.TestCase):
         )
         content = effective_content(self.store, ref(result.package))
         self.assertEqual({issue["kind"] for issue in content["issues"]},
-                         {"missing_page", "missing_asset", "gate_failure"})
+                         {"missing_page", "missing_asset", "gate_failure",
+                          "asset_inventory_pending"})
         self.assertEqual(len(content["resources"]), 4)
         self.assertEqual(content["readiness"]["worldbuilding"], "limited")
         draft = derive(self.store, ref(result.package), package_id="incomplete-adapted", title="Adapted")
