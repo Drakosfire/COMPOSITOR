@@ -49,6 +49,8 @@ Review high-confidence exclusions and non-extracted sections as well as emitted 
 
 ## Workflow and composition witnesses
 
+Apply the accepted [Composition contract and assembly witness](CONTRACT-composition.md). Cover source/adapted packages, linked/bundled dependencies, both save forms and reload equivalence, and rule edits whose dependent updates require acceptance. Saving and loading drafts with unresolved dependencies or pending proposals must preserve available content, visible limitations, and the separation of proposed and accepted changes. Per-use readiness is evaluated independently of draft loadability.
+
 Worldbuilding cases should show original and adapted claims, explicit cross-source connections, and additions to a blank World through its owning boundary. Planning cases should produce usable preparation from the selected package's participants, situations, references, and dependencies. Playing cases should exercise retrieval and presentation of relevant content with audience restrictions intact.
 
 Composition cases must cover each one-shot alone, both together, Eldyrwild alone and with packages, and a blank World receiving explicit authored additions. Check scoped queries and queries across the active set. A namespaced union must not infer identity equivalence merely from matching names.

@@ -4,7 +4,9 @@ COMPOSITOR is an ingestion and processing program for making **portable, source-
 
 The repository currently contains operating guidance, objectives, and benchmark design. There is no implemented ingestion pipeline, Composition format, fixture, database adapter, or production integration yet.
 
-Start with the [objectives and roadmap](Docs/Design/OBJECTIVES-compositor.md) and [one-shot benchmark and gold protocol](Docs/Design/BENCHMARKS-one-shots.md).
+Start with the [accepted Composition contract and assembly process](Docs/Design/CONTRACT-composition.md), [objectives and roadmap](Docs/Design/OBJECTIVES-compositor.md), and [one-shot benchmark and gold protocol](Docs/Design/BENCHMARKS-one-shots.md).
+
+Compositions support source and adapted packages, selectable linked or bundled rule dependencies, and saving adaptations as changes over a pinned original or as complete snapshots. Dependent updates require review. Drafts remain usable while readiness is tracked separately for Worldbuilding, Planning, and Playing. These are accepted design semantics; the concrete format and runtime are not implemented yet.
 
 ## Why this exists
 

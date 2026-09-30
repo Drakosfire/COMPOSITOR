@@ -2,6 +2,8 @@
 
 Status: operator-established direction; acceptance design for review. Capabilities below are objectives, not implemented behavior.
 
+The [Composition contract and assembly process](CONTRACT-composition.md) is the accepted semantic baseline for packages. Source and adapted packages, selectable dependency bundling, both save forms, reviewed dependent updates, and usable drafts are settled decisions. Readiness remains separate for each intended use.
+
 ## Purpose and ownership
 
 COMPOSITOR owns ingestion and processing: taking supplied documents through faithful evidence recovery, interpretation, resource construction, validation, and package preparation. Rules extraction is one capability within that responsibility. The program must handle narrative, Worldbuilding, characters, locations, encounters, procedures, tables, assets, and meaningful reference prose as well as mechanics.
@@ -36,7 +38,7 @@ Define operations distinctly:
 - **Ingest:** produce artifacts from a pinned source through a recorded processing recipe.
 - **Load/unload:** activate/deactivate an existing package in a workspace; preserve its stored artifacts and original source.
 - **Adapt:** author a traceable addition, modification, or binding in a selected World context.
-- **Save:** persist a draft or authored working material in its owning product/workspace store; saving a draft does not itself publish World truth.
+- **Save:** persist working material in its owning store, including a Composition revision or distinct derived package in either accepted save form. Incomplete drafts and pending impact review can be saved; saving does not itself publish World truth.
 - **Import/admit:** request incorporation into a selected World through its owner's validation and governance contract, keeping source and adaptation provenance.
 - **Publish:** perform the World owner's explicit publication transition, with the confirmation and revision semantics that contract requires. Workspace selection and draft saves do not imply this transition.
 
