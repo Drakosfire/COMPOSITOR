@@ -19,6 +19,7 @@ import sys
 
 OWNER_REF = "17854ad6eaf9aa8bdfc483f8c3eb0a6099f0bbd8"
 PAGE_MARKER = re.compile(r"(?m)^<!-- page (\d+) -->\s*$")
+RUN_ID = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]{0,99}$")
 
 
 def digest(path: Path) -> str:
@@ -44,6 +45,17 @@ def split_pages(markdown: str) -> dict[int, str]:
     return pages
 
 
+def run_output_dir(private_root: Path, run_id: str) -> Path:
+    """Reject unsafe run identities before any source-derived file is written."""
+    if not RUN_ID.fullmatch(run_id):
+        raise ValueError("run id must be one safe path component")
+    root = private_root.resolve()
+    out = (root / "runs" / run_id).resolve()
+    if not out.is_relative_to(root):
+        raise ValueError("run directory escapes private root")
+    return out
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--source-manifest", type=Path, required=True)
@@ -58,7 +70,7 @@ def main() -> None:
     database = args.database.resolve()
     if not database.is_relative_to(private_root):
         raise ValueError("database must be inside private root")
-    out = private_root / "runs" / args.run_id
+    out = run_output_dir(private_root, args.run_id)
     if out.exists():
         raise ValueError("run directory already exists; choose a new run id")
     owner = args.owner_root.resolve()

@@ -1,8 +1,10 @@
 """Source-safe checks for Conks page segmentation before private recovery."""
 
+from pathlib import Path
+from tempfile import TemporaryDirectory
 import unittest
 
-from scripts.prepare_conks_offline_evidence import split_pages
+from scripts.prepare_conks_offline_evidence import run_output_dir, split_pages
 
 
 class ConksRecipeTest(unittest.TestCase):
@@ -21,6 +23,18 @@ class ConksRecipeTest(unittest.TestCase):
                        for page in range(2, 21) if page != 8)
         with self.assertRaisesRegex(ValueError, "expected exactly"):
             split_pages(text)
+
+    def test_run_id_rejects_traversal_and_absolute_paths_before_output_creation(self) -> None:
+        with TemporaryDirectory() as temp:
+            root = Path(temp) / "private"
+            for value in ("../outside", "/tmp/absolute-run", "nested/run", ".."):
+                with self.subTest(value=value):
+                    with self.assertRaisesRegex(ValueError, "safe path component"):
+                        run_output_dir(root, value)
+                    self.assertFalse(root.exists())
+            safe = run_output_dir(root, "conks-md-substrate-002")
+            self.assertEqual(safe, root / "runs/conks-md-substrate-002")
+            self.assertFalse(safe.exists())
 
 
 if __name__ == "__main__":
