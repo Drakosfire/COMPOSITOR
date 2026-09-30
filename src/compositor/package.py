@@ -474,7 +474,8 @@ def resolve_rule(store: JsonPackageStore, content: dict[str, Any],
     if audience not in {"GM", "PLAYER"}:
         raise CompositionError("audience must be GM or PLAYER")
     rid = _id(binding.get("resource_id"), "rule resource id")
-    if "package_id" not in binding and "revision" not in binding:
+    external = "package_id" in binding or "revision" in binding
+    if not external:
         resource = content["resources"].get(rid)
         source = {"package_id": content["package_id"], "revision": content["revision"]}
     else:
@@ -500,6 +501,11 @@ def resolve_rule(store: JsonPackageStore, content: dict[str, Any],
     if audience == "PLAYER" and resource["audience"] != "PLAYER":
         return {"state": "unsupported", "reason": "rule is not player-visible", "binding": deepcopy(binding)}
     expected_ruleset = binding.get("ruleset")
-    if expected_ruleset and resource.get("ruleset") != expected_ruleset:
+    if external and (not isinstance(expected_ruleset, str) or not expected_ruleset.strip()):
+        return {"state": "unresolved", "reason": "external rule edition unspecified",
+                "binding": deepcopy(binding)}
+    if expected_ruleset is not None and (not isinstance(expected_ruleset, str)
+                                        or not expected_ruleset.strip()
+                                        or resource.get("ruleset") != expected_ruleset):
         return {"state": "unresolved", "reason": "ruleset or edition mismatch", "binding": deepcopy(binding)}
     return {"state": "resolved", "resource": deepcopy(resource), "source": source}

@@ -86,6 +86,12 @@ class PackageCycleTest(unittest.TestCase):
         linked_content = effective_content(self.store, ref(linked))
         binding = {**ref(rules), "resource_id": "calm", "ruleset": "windmill-v1"}
         self.assertEqual(resolve_rule(self.store, linked_content, binding, audience="PLAYER")["state"], "resolved")
+        unspecified = {key: value for key, value in binding.items() if key != "ruleset"}
+        self.assertEqual(resolve_rule(self.store, linked_content, unspecified, audience="PLAYER")["reason"],
+                         "external rule edition unspecified")
+        self.assertEqual(resolve_rule(self.store, linked_content,
+                                      {**binding, "ruleset": ""}, audience="PLAYER")["reason"],
+                         "external rule edition unspecified")
         wrong_edition = {**binding, "ruleset": "windmill-v2"}
         self.assertEqual(resolve_rule(self.store, linked_content, wrong_edition, audience="PLAYER")["reason"], "ruleset or edition mismatch")
         wrong_revision = {**binding, "revision": "0" * 64}
@@ -98,6 +104,8 @@ class PackageCycleTest(unittest.TestCase):
         self.store.path_for(**ref(rules)).unlink()
         bundled_content = effective_content(self.store, ref(bundled))
         self.assertEqual(resolve_rule(self.store, bundled_content, binding, audience="PLAYER")["state"], "resolved")
+        self.assertEqual(resolve_rule(self.store, bundled_content, unspecified, audience="PLAYER")["reason"],
+                         "external rule edition unspecified")
         unavailable = effective_content(self.store, ref(linked))
         self.assertIn("missing_dependency", {issue["kind"] for issue in unavailable["issues"]})
         self.assertEqual(resolve_rule(self.store, unavailable, binding, audience="PLAYER")["reason"], "linked dependency unavailable")
@@ -114,6 +122,30 @@ class PackageCycleTest(unittest.TestCase):
         independent = effective_content(self.store, ref(snapshot))
         self.assertEqual(independent["resources"]["hook"], FIXTURE["source_resources"]["hook"])
         self.assertFalse(any(issue["kind"] == "missing_base" for issue in independent["issues"]))
+
+    def test_unversioned_external_rule_binding_stays_visible_but_unresolved(self) -> None:
+        rules = make_source_package(
+            self.store, package_id=FIXTURE["rules_package_id"], title="Windmill rules",
+            resources={"calm": FIXTURE["external_rule"]},
+        )
+        draft = derive(self.store, ref(self.source), package_id="unversioned-rule",
+                       title="Unversioned rule draft")
+        select_dependency(self.store, draft, ref(rules), mode="linked")
+        watcher = deepcopy(draft.resources["watcher"])
+        watcher["rule_refs"].append({**ref(rules), "resource_id": "calm"})
+        edit_resource(draft, watcher)
+        saved = save_derived(self.store, draft, form="snapshot")
+        content = effective_content(self.store, ref(saved))
+        self.assertIn("external rule edition unspecified",
+                      {issue.get("reason") for issue in content["issues"]})
+        self.assertEqual(content["readiness"]["playing"], "limited")
+        self.assertTrue(query(content, "Mill Watcher", audience="GM"))
+
+        watcher["rule_refs"][-1]["ruleset"] = "windmill-v1"
+        edit_resource(draft, watcher)
+        corrected = save_derived(self.store, draft, form="snapshot")
+        self.assertNotIn("unresolved_rule",
+                         {issue["kind"] for issue in effective_content(self.store, ref(corrected))["issues"]})
 
     def test_new_edit_preserves_superseded_impact_history(self) -> None:
         draft = derive(self.store, ref(self.source), package_id="iterated", title="Iterated")
