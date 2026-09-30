@@ -13,6 +13,7 @@ from .package import CompositionError, JsonPackageStore
 
 
 _SHA = re.compile(r"^[0-9a-f]{64}$")
+_IMAGE_MIME = {"png": "image/png", "jpeg": "image/jpeg"}
 
 
 def _digest(path: Path) -> str:
@@ -82,8 +83,11 @@ def project_asset_references(*, base_store: JsonPackageStore, base_ref: dict[str
             if len(matches) != 1:
                 raise CompositionError("asset PDF page/xref occurrence mismatch")
             extracted = document.extract_image(xref)
-            if extracted is None or extracted["ext"] != "png":
+            if extracted is None or extracted["ext"] not in _IMAGE_MIME:
                 raise CompositionError("asset PDF image format mismatch")
+            mime_type = _IMAGE_MIME[extracted["ext"]]
+            if asset.get("mime_type", mime_type if mime_type == "image/png" else None) != mime_type:
+                raise CompositionError("asset MIME type mismatch")
             actual_image = extracted["image"]
             expected = asset.get("sha256", "")
             image_path = _private_file(Path(private_root), asset.get("private_file"))
@@ -98,6 +102,11 @@ def project_asset_references(*, base_store: JsonPackageStore, base_ref: dict[str
                 raise CompositionError("asset PDF geometry mismatch")
             if asset.get("audience") not in {"GM", "PLAYER"} or not asset.get("name"):
                 raise CompositionError("asset audience or name missing")
+            if mime_type == "image/jpeg":
+                expected_review = ("gm_only" if asset["audience"] == "GM"
+                                   else "player_safe_reviewed")
+                if asset.get("audience_review") != expected_review:
+                    raise CompositionError("asset audience review missing or incompatible")
             resources[resource_id] = {
                 "id": resource_id, "kind": "asset_reference", "name": asset["name"],
                 "text": "Source image available privately; reference only pending content review.",
@@ -111,9 +120,17 @@ def project_asset_references(*, base_store: JsonPackageStore, base_ref: dict[str
                           "height": extracted["height"],
                           "bbox_pdf_points": list(match["bbox"])},
             }
+            if mime_type == "image/jpeg":
+                resources[resource_id]["asset"].update({
+                    "mime_type": mime_type, "audience_review": asset["audience_review"],
+                })
     diagnostics = deepcopy(base.get("diagnostics", []))
-    diagnostics.append({"kind": "map_reference_only", "count": len(assets),
-                        "reason": "private bytes extracted but map meaning and presentation not approved"})
+    if any(asset.get("mime_type") == "image/jpeg" for asset in assets):
+        diagnostics.append({"kind": "asset_reference_only", "count": len(assets),
+                            "reason": "private image bytes verified; visual meaning and player presentation not approved"})
+    else:
+        diagnostics.append({"kind": "map_reference_only", "count": len(assets),
+                            "reason": "private bytes extracted but map meaning and presentation not approved"})
     return output_store.save({
         "format_version": 1, "package_id": package_id,
         "title": f"{base['title']} with illustrated asset references", "form": "source",
