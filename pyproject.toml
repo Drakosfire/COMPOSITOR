@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Portable source-linked Composition packages"
 requires-python = ">=3.11"
 dependencies = []
+license = {text = "MIT"}
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]
