@@ -1,0 +1,73 @@
+{
+  "fixture_version": 1,
+  "license": "Project-authored for COMPOSITOR engineering checks",
+  "source_package_id": "windmill-adventure",
+  "rules_package_id": "windmill-rules",
+  "source_relationships": [
+    {"id": "watcher-uses-wind", "source_id": "watcher", "target_id": "wind", "kind": "uses_rule"},
+    {"id": "hook-leads-watcher", "source_id": "hook", "target_id": "watcher", "kind": "introduces"}
+  ],
+  "source_resources": {
+    "wind": {
+      "id": "wind",
+      "kind": "rule",
+      "name": "Wind step",
+      "text": "A gust moves a token one space.",
+      "audience": "PLAYER",
+      "ruleset": "windmill-v1",
+      "origin": {"type": "source", "source_id": "public-windmill-v1", "locator": "fixtures/public/package-cycle.json#/source_resources/wind"}
+    },
+    "watcher": {
+      "id": "watcher",
+      "kind": "creature",
+      "name": "Mill watcher",
+      "text": "The watcher can move a token one space with Wind step.",
+      "audience": "GM",
+      "origin": {"type": "source", "source_id": "public-windmill-v1", "locator": "fixtures/public/package-cycle.json#/source_resources/watcher"},
+      "rule_refs": [{"resource_id": "wind", "ruleset": "windmill-v1"}]
+    },
+    "hook": {
+      "id": "hook",
+      "kind": "narrative",
+      "name": "Windmill invitation",
+      "text": "A letter invites the party to inspect a noisy windmill.",
+      "audience": "PLAYER",
+      "origin": {"type": "source", "source_id": "public-windmill-v1", "locator": "fixtures/public/package-cycle.json#/source_resources/hook"}
+    },
+    "secret": {
+      "id": "secret",
+      "kind": "narrative",
+      "name": "Hidden gear",
+      "text": "The miller concealed a cracked gear beneath the floor.",
+      "audience": "GM",
+      "origin": {"type": "source", "source_id": "public-windmill-v1", "locator": "fixtures/public/package-cycle.json#/source_resources/secret"}
+    }
+  },
+  "amended_rule": {
+    "id": "wind",
+    "kind": "rule",
+    "name": "Wind step",
+    "text": "A gust moves a token two spaces.",
+    "audience": "PLAYER",
+    "ruleset": "windmill-v1",
+    "origin": {"type": "authored", "reason": "Eldyrwild adaptation in the fixture"}
+  },
+  "reviewed_watcher": {
+    "id": "watcher",
+    "kind": "creature",
+    "name": "Mill watcher",
+    "text": "The watcher can move a token two spaces with Wind step.",
+    "audience": "GM",
+    "origin": {"type": "authored", "reason": "Reviewed consequence of the adapted rule"},
+    "rule_refs": [{"resource_id": "wind", "ruleset": "windmill-v1"}]
+  },
+  "external_rule": {
+    "id": "calm",
+    "kind": "rule",
+    "name": "Calm air",
+    "text": "Calm air prevents Wind step for one turn.",
+    "audience": "PLAYER",
+    "ruleset": "windmill-v1",
+    "origin": {"type": "source", "source_id": "public-windmill-rules-v1", "locator": "fixtures/public/package-cycle.json#/external_rule"}
+  }
+}

@@ -2,13 +2,13 @@
 
 COMPOSITOR is an ingestion and processing program for making **portable, source-linked Compositions** from documents people bring themselves. Its goal is competent to better-than-good first ingestion into packages usable for **Worldbuilding, Planning, and Playing**. A package preserves resources, relationships, source identity, audience boundaries, adaptations, and explicit unresolved or unsupported material.
 
-The repository currently contains operating guidance, objectives, and benchmark design. There is no implemented ingestion pipeline, Composition format, fixture, database adapter, or production integration yet.
+The repository contains operating guidance, objectives, benchmark design, and a first deterministic Composition package kernel. Document ingestion, the private experiment database, and production integrations remain future work.
 
 Start with the [accepted Composition contract and assembly process](Docs/Design/CONTRACT-composition.md), [objectives and roadmap](Docs/Design/OBJECTIVES-compositor.md), and [one-shot benchmark and gold protocol](Docs/Design/BENCHMARKS-one-shots.md).
 
 The [draft capability PR stack](Docs/Roadmaps/ROADMAP-composition-pr-stack.md) groups implementation into reviewable bites with concise handoffs. It is proposed sequencing for PRIME review; future dispatches must pin their actual inputs and boundaries.
 
-Compositions support source and adapted packages, selectable linked or bundled rule dependencies, and saving adaptations as changes over a pinned original or as complete snapshots. Dependent updates require review. Drafts remain usable while readiness is tracked separately for Worldbuilding, Planning, and Playing. These are accepted design semantics; the concrete format and runtime are not implemented yet.
+The first format implements source and adapted packages, selectable linked or bundled exact rule dependencies, and saving adaptations as changes over a pinned original or as complete snapshots. Direct rule edits produce dependent update proposals for review. Drafts remain readable with explicit issues and preliminary readiness for Worldbuilding, Planning, and Playing. This kernel is a deterministic package boundary, not a document ingestion or runtime integration.
 
 ## Why this exists
 
@@ -20,7 +20,7 @@ The research includes rules extraction and exact bindings for statblocks and Rul
 
 Two independently reported one-shot benchmarks will establish whether ingestion and package preparation are useful: *Of Conks & Cons* and *A Wild Sheep Chase*. Each receives its own gold author and source-grounded review loop. Together they also exercise loading either or both packages with Eldyrwild or a blank World, source-scoped and combined queries, and explicit Worldbuilding adaptations.
 
-The first implementation should reuse existing research and establish reproducible input, artifact, and replay boundaries. A tiny public fixture in `.json` files supports those engineering checks. Private database records will persist real-source experiments, versions, outputs, judgments, and receipts. Both storage forms should express the same logical artifacts, with private JSON exports for replay. Database technology is still open.
+The [project-authored JSON fixture](fixtures/public/package-cycle.json) supports package engineering checks. Private database records will persist real-source experiments, versions, outputs, judgments, and receipts. Both storage forms should express the same logical artifacts, with private JSON exports for replay. Database technology is still open.
 
 First-ingestion quality, repairs, coverage, known imperfections, and human review effort will be reported separately. These are acceptance targets, not implemented features.
 
@@ -36,11 +36,13 @@ This work builds on existing RulesIngestion research and tooling. [DungeonOverMi
 
 Read [AGENTS.md](AGENTS.md) before agent-assisted work. Follow the current operator direction and record the write, data, runtime, provider, and budget scope needed by the assigned work. Design decisions do not automatically authorize paid runs or production changes.
 
-Copy [.env.example](.env.example) to `.env` and fill the source paths and settings needed for your local experiments. It includes optional OpenAI, OpenRouter, and Buddy internal API key names. COMPOSITOR does not consume these settings yet. `.env` stays local.
+Copy [.env.example](.env.example) to `.env` and fill the source paths and settings needed for your local experiments. It includes optional OpenAI, OpenRouter, and Buddy internal API key names. The package kernel does not consume these settings. `.env` stays local.
 
 Keep private PDFs, processed Markdown, reviewed gold, source-derived packages, media, and replay exports under `.local/private/` (or at external paths named in `.env`). Write generated runs and diagnostics under `.local/out/`; preserve first results and later repairs in separate run directories. Both roots are ignored by Git. Other common private corpus and artifact directories are ignored as a safeguard. Put intentionally public, project-authored fixtures under `fixtures/public/` and source-safe benchmark definitions under `evals/public/` once those directories are created. Review any file before explicitly adding it to the public repo.
 
-There is no installation or test command to run yet. The first implementation PR should add only the dependencies, fixture, workflow, and verification needed for its bounded baseline, then document their actual commands here.
+The kernel needs Python 3.11 or newer and has no runtime dependencies. Run its contract witnesses with `PYTHONPATH=src python3 -m unittest discover -s tests -v`. To build a wheel in a prepared Python environment, run `python3 -m pip wheel --no-deps --no-build-isolation --wheel-dir /tmp/compositor-build .`.
+
+`JsonPackageStore` writes immutable, content-addressed revisions beneath an explicit directory. Keep real-source stores under `.local/private/`, not `fixtures/public/`. The [package-cycle run record](Docs/Implementation/RECORD-01-package-cycle.md) gives the exact first implementation scope, smoke checks, and current limits.
 
 ## Open-source status
 

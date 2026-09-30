@@ -39,6 +39,7 @@ htmlcov/
 .venv/
 .venv-*/
 .uv-cache/
+*.egg-info/
 
 # Node build artifacts if a consumer tool is developed here later.
 node_modules/
