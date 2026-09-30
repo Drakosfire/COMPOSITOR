@@ -53,42 +53,64 @@ def project_asset_references(*, base_store: JsonPackageStore, base_ref: dict[str
     pdf_sha = source.get("sha256", "")
     if not pdf_path.is_file() or not _SHA.fullmatch(pdf_sha) or _digest(pdf_path) != pdf_sha:
         raise CompositionError("illustrated PDF revision mismatch")
+    try:
+        import fitz
+    except ImportError as exc:
+        raise CompositionError("PyMuPDF required to verify PDF asset provenance") from exc
     assets = manifest.get("assets")
     if not isinstance(assets, list) or not assets:
         raise CompositionError("asset manifest needs reviewed references")
     resources = deepcopy(base["resources"])
     seen: set[str] = set()
-    for asset in assets:
-        if not isinstance(asset, dict) or asset.get("status") != "reference_only":
-            raise CompositionError("asset cannot claim verified publication")
-        resource_id = asset.get("resource_id")
-        if not isinstance(resource_id, str) or not resource_id or resource_id in resources or resource_id in seen:
-            raise CompositionError("asset resource identity missing or duplicated")
-        seen.add(resource_id)
-        printed_page, page_index, xref = (asset.get(key) for key in
-                                           ("printed_page", "pdf_page_index", "xref"))
-        if (not isinstance(printed_page, int) or printed_page < 1
-                or not isinstance(page_index, int) or page_index != printed_page - 1
-                or not isinstance(xref, int) or xref < 1):
-            raise CompositionError("asset PDF locator invalid")
-        expected = asset.get("sha256", "")
-        image_path = _private_file(Path(private_root), asset.get("private_file"))
-        if not _SHA.fullmatch(expected) or _digest(image_path) != expected:
-            raise CompositionError("private asset byte revision mismatch")
-        if asset.get("audience") not in {"GM", "PLAYER"} or not asset.get("name"):
-            raise CompositionError("asset audience or name missing")
-        resources[resource_id] = {
-            "id": resource_id, "kind": "asset_reference", "name": asset["name"],
-            "text": "Source image available privately; reference only pending content review.",
-            "audience": asset["audience"],
-            "origin": {"type": "source", "source_id": f"sha256:{pdf_sha}",
-                       "locator": f"illustrated_pdf/page-{printed_page}#xref={xref}",
-                       "printed_page": printed_page, "pdf_page_index": page_index,
-                       "image_sha256": expected},
-            "asset": {"status": "reference_only", "private_file": asset["private_file"],
-                      "sha256": expected, "width": asset["width"], "height": asset["height"],
-                      "bbox_pdf_points": asset["bbox_pdf_points"]},
-        }
+    with fitz.open(pdf_path) as document:
+        for asset in assets:
+            if not isinstance(asset, dict) or asset.get("status") != "reference_only":
+                raise CompositionError("asset cannot claim verified publication")
+            resource_id = asset.get("resource_id")
+            if not isinstance(resource_id, str) or not resource_id or resource_id in resources or resource_id in seen:
+                raise CompositionError("asset resource identity missing or duplicated")
+            seen.add(resource_id)
+            printed_page, page_index, xref = (asset.get(key) for key in
+                                               ("printed_page", "pdf_page_index", "xref"))
+            if (not isinstance(printed_page, int) or printed_page < 1
+                    or not isinstance(page_index, int) or page_index != printed_page - 1
+                    or page_index >= len(document)
+                    or not isinstance(xref, int) or xref < 1):
+                raise CompositionError("asset PDF locator invalid")
+            matches = [item for item in document[page_index].get_image_info(xrefs=True)
+                       if item["xref"] == xref]
+            if len(matches) != 1:
+                raise CompositionError("asset PDF page/xref occurrence mismatch")
+            extracted = document.extract_image(xref)
+            if extracted is None or extracted["ext"] != "png":
+                raise CompositionError("asset PDF image format mismatch")
+            actual_image = extracted["image"]
+            expected = asset.get("sha256", "")
+            image_path = _private_file(Path(private_root), asset.get("private_file"))
+            if not _SHA.fullmatch(expected) or _digest(image_path) != expected:
+                raise CompositionError("private asset byte revision mismatch")
+            if sha256(actual_image).hexdigest() != expected or image_path.read_bytes() != actual_image:
+                raise CompositionError("private asset bytes differ from PDF image")
+            match = matches[0]
+            if ((asset.get("width"), asset.get("height")) != (extracted["width"], extracted["height"])
+                    or (extracted["width"], extracted["height"]) != (match["width"], match["height"])
+                    or asset.get("bbox_pdf_points") != list(match["bbox"])):
+                raise CompositionError("asset PDF geometry mismatch")
+            if asset.get("audience") not in {"GM", "PLAYER"} or not asset.get("name"):
+                raise CompositionError("asset audience or name missing")
+            resources[resource_id] = {
+                "id": resource_id, "kind": "asset_reference", "name": asset["name"],
+                "text": "Source image available privately; reference only pending content review.",
+                "audience": asset["audience"],
+                "origin": {"type": "source", "source_id": f"sha256:{pdf_sha}",
+                           "locator": f"illustrated_pdf/page-{printed_page}#xref={xref}",
+                           "printed_page": printed_page, "pdf_page_index": page_index,
+                           "image_sha256": expected},
+                "asset": {"status": "reference_only", "private_file": asset["private_file"],
+                          "sha256": expected, "width": extracted["width"],
+                          "height": extracted["height"],
+                          "bbox_pdf_points": list(match["bbox"])},
+            }
     diagnostics = deepcopy(base.get("diagnostics", []))
     diagnostics.append({"kind": "map_reference_only", "count": len(assets),
                         "reason": "private bytes extracted but map meaning and presentation not approved"})
