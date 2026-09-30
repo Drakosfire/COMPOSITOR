@@ -206,7 +206,7 @@ def readiness(issues: list[dict[str, Any]]) -> dict[str, str]:
     """Conservative first-pass statuses; task-specific assessment comes later."""
     kinds = {item["kind"] for item in issues}
     return {
-        "worldbuilding": "limited" if "missing_base" in kinds else "usable",
+        "worldbuilding": "limited" if kinds & {"missing_base", "unresolved_rule"} else "usable",
         "planning": "limited" if kinds else "usable",
         "playing": "limited" if kinds else "usable",
     }
@@ -251,6 +251,27 @@ def effective_content(store: JsonPackageStore, ref: dict[str, str], *,
     for proposal in package["proposals"]:
         if proposal["status"] == "pending":
             issues.append({"kind": "pending_impact", "proposal_id": proposal["id"]})
+    for source_id, resource in sorted(resources.items()):
+        for binding in resource.get("rule_refs", []):
+            result = resolve_rule(store, {
+                "package_id": package["package_id"], "revision": package["revision"],
+                "resources": resources, "dependencies": package["dependencies"],
+            }, binding, audience="GM")
+            if result["state"] != "resolved":
+                issues.append({"kind": "unresolved_rule", "source_id": source_id,
+                               "binding": deepcopy(binding), "reason": result["reason"]})
+    for relation in package["relationships"]:
+        if relation["kind"] != "uses_rule" or relation["source_id"] not in resources:
+            continue
+        binding = {"resource_id": relation["target_id"]}
+        result = resolve_rule(store, {
+            "package_id": package["package_id"], "revision": package["revision"],
+            "resources": resources, "dependencies": package["dependencies"],
+        }, binding, audience="GM")
+        if result["state"] != "resolved":
+            issues.append({"kind": "unresolved_rule", "source_id": relation["source_id"],
+                           "relationship_id": relation["id"], "binding": binding,
+                           "reason": result["reason"]})
     issues = list({_hash(issue): issue for issue in issues}.values())
     return {
         "package_id": package["package_id"], "revision": package["revision"],
@@ -303,8 +324,14 @@ def edit_resource(draft: WorkingDraft, replacement: dict[str, Any], *,
         }
     draft.resources[rid] = deepcopy(replacement)
     affected = []
+    relation_dependents = {
+        relation["source_id"] for relation in draft.relationships
+        if relation["kind"] == "uses_rule" and relation["target_id"] == rid
+    }
     for target_id, resource in sorted(draft.resources.items()):
-        if target_id == rid or not any(binding["resource_id"] == rid for binding in resource.get("rule_refs", [])):
+        if target_id == rid or (target_id not in relation_dependents and not any(
+                "package_id" not in binding and binding["resource_id"] == rid
+                for binding in resource.get("rule_refs", []))):
             continue
         candidate = (candidates or {}).get(target_id)
         if candidate is not None:

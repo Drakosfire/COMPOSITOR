@@ -135,6 +135,38 @@ class PackageCycleTest(unittest.TestCase):
         with self.assertRaisesRegex(CompositionError, "pending impact proposal not found"):
             accept_impact(draft, first["id"], replacement=FIXTURE["reviewed_watcher"])
 
+    def test_unresolved_local_rule_is_visible_and_limits_readiness(self) -> None:
+        creature = deepcopy(FIXTURE["source_resources"]["watcher"])
+        creature["rule_refs"] = [{"resource_id": "missing", "ruleset": "windmill-v1"}]
+        broken = make_source_package(self.store, package_id="unresolved", title="Unresolved",
+                                     resources={"watcher": creature})
+        content = effective_content(self.store, ref(broken))
+        self.assertEqual(len(content["resources"]), 1)
+        self.assertEqual(content["issues"], [{
+            "kind": "unresolved_rule", "source_id": "watcher",
+            "binding": {"resource_id": "missing", "ruleset": "windmill-v1"},
+            "reason": "bound rule missing",
+        }])
+        self.assertEqual(content["readiness"], {
+            "worldbuilding": "limited", "planning": "limited", "playing": "limited",
+        })
+
+    def test_relationship_only_rule_dependent_requires_impact_review(self) -> None:
+        watcher = deepcopy(FIXTURE["source_resources"]["watcher"])
+        watcher.pop("rule_refs")
+        related = make_source_package(
+            self.store, package_id="relation-only", title="Relation only",
+            resources={"wind": FIXTURE["source_resources"]["wind"], "watcher": watcher},
+            relationships=[FIXTURE["source_relationships"][0]],
+        )
+        draft = derive(self.store, ref(related), package_id="relation-edit", title="Relation edit")
+        proposals = edit_resource(draft, FIXTURE["amended_rule"])
+        self.assertEqual([p["target_id"] for p in proposals], ["watcher"])
+        pending = save_derived(self.store, draft, form="delta")
+        content = effective_content(self.store, ref(pending))
+        self.assertIn("pending_impact", {issue["kind"] for issue in content["issues"]})
+        self.assertEqual(content["resources"]["watcher"], watcher)
+
     def test_integrity_and_identity_fail_closed(self) -> None:
         path = self.store.path_for(**ref(self.source))
         corrupt = deepcopy(self.source)
