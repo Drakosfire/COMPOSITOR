@@ -2,7 +2,7 @@
 
 COMPOSITOR is an ingestion and processing program for making **portable, source-linked Compositions** from documents people bring themselves. Its goal is competent to better-than-good first ingestion into packages usable for **Worldbuilding, Planning, and Playing**. A package preserves resources, relationships, source identity, audience boundaries, adaptations, and explicit unresolved or unsupported material.
 
-The repository contains operating guidance, objectives, benchmark design, a deterministic Composition package kernel, an offline adapter for RulesIngestion evidence artifacts, and a private SQLite experiment ledger. Full adventure ingestion, scored comparisons, and production integrations remain future work.
+The repository contains operating guidance, objectives, benchmark design, a deterministic Composition package kernel, an offline adapter for RulesIngestion evidence artifacts, and a private SQLite experiment ledger. Full source evidence recovery has been piloted privately on both one-shots; task-level comparisons and production integrations remain future work.
 
 Start with the [accepted Composition contract and assembly process](Docs/Design/CONTRACT-composition.md), [objectives and roadmap](Docs/Design/OBJECTIVES-compositor.md), and [one-shot benchmark and gold protocol](Docs/Design/BENCHMARKS-one-shots.md).
 
@@ -45,6 +45,8 @@ The kernel needs Python 3.11 or newer and has no runtime dependencies. Run its c
 `JsonPackageStore` writes immutable, content-addressed revisions beneath an explicit directory. `load_evidence_draft` reads pinned Stage A/B artifacts, preserves unit locators and recovery route, and exposes missing pages/assets and failed gates without hiding the available draft. `SQLiteExperimentLedger` records exact run pins, immutable private artifact references, judgments, and bounded provider receipts. Keep real-source stores and the database under `.local/private/`, not `fixtures/public/`. The [package-cycle record](Docs/Implementation/RECORD-01-package-cycle.md), [document-to-draft record](Docs/Implementation/RECORD-02-document-to-draft.md), [ledger record](Docs/Implementation/RECORD-03-experiment-ledger.md), and [first private evidence record](Docs/Implementation/RECORD-04-conks-offline-evidence.md) give the exact scopes, smoke checks, and limits.
 
 The [owner A/B review packet](Docs/Implementation/RECORD-18-owner-evidence-review-packet.md) prepares source-page candidates from a frozen first result and frozen gold. It leaves task verdicts blank until a reviewer checks the source and intended consumer behavior; private packets and judgments stay outside Git.
+
+The [Sheep v2 first-evidence record](Docs/Implementation/RECORD-19-sheep-ocr2-first-evidence.md) pins the second adventure's source, frozen gold, bounded DeepSeek OCR 2 run, package replay, and source-retention limits without publishing private material.
 
 ## Open-source status
 
