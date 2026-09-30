@@ -1,0 +1,57 @@
+{
+  "content_hash": "27b026fcd4777083dbfa9690c353c73eefd358c51008f4cb78340e1a0a5d3654",
+  "node_count": 7,
+  "page_fingerprint": "812634aa78fe741dac30201af8e102fc5ee3e509d31d7280f38f1d395c138019",
+  "root": {
+    "children": [
+      {
+        "level": 0,
+        "node_type": "paragraph",
+        "source_line_end": 1,
+        "source_line_start": 0,
+        "text": "North Mill Field Notes"
+      },
+      {
+        "level": 0,
+        "node_type": "paragraph",
+        "source_line_end": 4,
+        "source_line_start": 2,
+        "text": "Arrival\nA letter invites the party to inspect a noisy windmill."
+      },
+      {
+        "level": 0,
+        "node_type": "paragraph",
+        "source_line_end": 9,
+        "source_line_start": 7,
+        "text": "Wind Step\nA gust moves a token one space."
+      },
+      {
+        "level": 0,
+        "node_type": "paragraph",
+        "source_line_end": 14,
+        "source_line_start": 12,
+        "text": "Mill Watcher\nThe watcher can move a token one space with Wind Step."
+      },
+      {
+        "level": 0,
+        "node_type": "paragraph",
+        "source_line_end": 19,
+        "source_line_start": 17,
+        "text": "Hidden Gear\nThe miller concealed a cracked gear beneath the floor."
+      },
+      {
+        "level": 0,
+        "node_type": "paragraph",
+        "source_line_end": 24,
+        "source_line_start": 23,
+        "text": "Project-authored COMPOSITOR engineering fixture | Page 1"
+      }
+    ],
+    "level": 0,
+    "node_type": "root",
+    "source_line_end": 24,
+    "source_line_start": 0,
+    "text": ""
+  },
+  "table_count": 0
+}
