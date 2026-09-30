@@ -1,0 +1,13 @@
+# Stateless Composition read projection
+
+Status: **PR candidate for PRIME review**. Base: COMPOSITOR `origin/main` at `adafc2958418f16b1cbf2ce3a6d4b073da703ab5`. PRIME leased only `src/compositor/read_projection.py`, `tests/test_read_projection.py`, and this record. No provider, model, or GPU calls were made; external spend is $0.
+
+ARCHITECTURE assigned the session's active exact package revisions and audience to Buddy. COMPOSITOR supplies deterministic reads over those caller-provided refs. WorldKeeper remains the owner of explicit reviewed World changes. [Handoff 04](../Handoffs/HANDOFF-04-composition-in-context.md) is still proposed and does not become consumer implementation authority through this PR.
+
+`project_query(store, refs, term, audience)` materializes each selected revision for this call, returning audience-filtered hits with exact package, revision, resource identity, and the resource's origin. Same names and resource IDs in different packages remain separate. The response also contains aggregate readiness for each available ref and a typed `missing_revision` diagnostic for an unavailable exact ref; no other revision is substituted. Duplicate package identities, malformed refs, invalid audience, and blank terms fail. An empty selected set returns an empty result. Passing a changed ref list on the next call is the local unload/select contract; this module stores no active set.
+
+Package issues can identify GM-only resources. This audience-facing API returns aggregate readiness without raw issue objects, and PLAYER hits exclude GM resources. It does not claim that aggregate readiness is a player-specific assessment. Synthetic tests check same-name namespace preservation, source provenance, GM/PLAYER filtering and diagnostic non-disclosure, missing refs, blank selection, changed input sets, and invalid selection.
+
+Verification: `PYTHONPATH=src python3 -m unittest discover -s tests -p test_read_projection.py -v` passed all three focused tests. `PYTHONPATH=src rtk test python3 -m unittest discover -s tests -v` ran 57 tests with six skipped and no failures. `git diff --check` passed. All fixtures are synthetic; no private source, gold, or run output is committed.
+
+The test witness exercises COMPOSITOR's local kernel, not a Buddy session, cache, or model-context path. Buddy must still own exact active refs and prove selected/combined queries and unload at its real consumer boundary for Sheep cases 048 and 052. Adaptation into a World requires a later explicit reviewed workflow. This PR does not assign semantic verdicts to either one-shot or verify rule interaction.
