@@ -68,6 +68,8 @@ Repeated tuning on two adventures demonstrates competence on those benchmarks. R
 
 ## Roadmap by acceptance witness
 
+The [draft Composition PR stack](../Roadmaps/ROADMAP-composition-pr-stack.md) groups these capability gates into proposed reviewable PR bites and handoffs. It does not replace the acceptance objectives or activate future work.
+
 1. **Freeze the evaluation contract.** Identify both exact sources, enumerate Worldbuilding/Planning/Playing tasks, define expected output categories and defect severity, and settle the private storage choice. Resolve source handling and experiment budgets before affected runs.
 2. **Establish reviewed gold.** Assign one author per one-shot. Parent review checks source claims, omissions, alternatives, and audience assumptions. Iterate until no known defect invalidates declared benchmark scope, then freeze each suite independently.
 3. **Deliver a reproducible ingestion path.** Reuse prior research and tooling; establish exact input, resource, persistence, and replay contracts. Preserve and score first-run results for each adventure. Diagnose evidence recovery, semantic interpretation, assembly, and interaction failures separately.

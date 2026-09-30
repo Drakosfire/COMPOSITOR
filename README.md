@@ -6,6 +6,8 @@ The repository currently contains operating guidance, objectives, and benchmark 
 
 Start with the [accepted Composition contract and assembly process](Docs/Design/CONTRACT-composition.md), [objectives and roadmap](Docs/Design/OBJECTIVES-compositor.md), and [one-shot benchmark and gold protocol](Docs/Design/BENCHMARKS-one-shots.md).
 
+The [draft capability PR stack](Docs/Roadmaps/ROADMAP-composition-pr-stack.md) groups implementation into reviewable bites with concise handoffs. It is proposed sequencing for PRIME review; future dispatches must pin their actual inputs and boundaries.
+
 Compositions support source and adapted packages, selectable linked or bundled rule dependencies, and saving adaptations as changes over a pinned original or as complete snapshots. Dependent updates require review. Drafts remain usable while readiness is tracked separately for Worldbuilding, Planning, and Playing. These are accepted design semantics; the concrete format and runtime are not implemented yet.
 
 ## Why this exists
