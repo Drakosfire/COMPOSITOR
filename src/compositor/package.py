@@ -235,6 +235,51 @@ def readiness(issues: list[dict[str, Any]]) -> dict[str, str]:
     }
 
 
+def _issue_scope(issue: dict[str, Any], content: dict[str, Any]) -> tuple[set[str], bool]:
+    """Return proven affected resources and whether every scope locator resolves."""
+    if issue.get("scope") == "global":
+        return set(content.get("resources", {})), True
+    resources = content.get("resources", {})
+    affected: set[str] = set()
+    declared = False
+    complete = True
+    for key in ("resource_id", "source_id"):
+        if key in issue:
+            declared = True
+            rid = issue[key]
+            if isinstance(rid, str) and rid in resources:
+                affected.add(rid)
+            else:
+                complete = False
+    if "resource_ids" in issue:
+        declared = True
+        ids = issue["resource_ids"]
+        if not isinstance(ids, list) or not ids:
+            complete = False
+        else:
+            for rid in ids:
+                if isinstance(rid, str) and rid in resources:
+                    affected.add(rid)
+                else:
+                    complete = False
+    for key, collection, fields in (
+            ("relationship_id", content.get("relationships", []), ("source_id", "target_id")),
+            ("proposal_id", content.get("proposals", []), ("target_id",))):
+        if key in issue:
+            declared = True
+            match = next((item for item in collection if item["id"] == issue[key]), None)
+            if match is None:
+                complete = False
+            else:
+                for field in fields:
+                    rid = match[field]
+                    if rid in resources:
+                        affected.add(rid)
+                    else:
+                        complete = False
+    return affected, declared and complete
+
+
 def effective_content(store: JsonPackageStore, ref: dict[str, str], *,
                       _seen: set[tuple[str, str]] | None = None) -> dict[str, Any]:
     """Materialize a package and report missing content without inventing it."""
@@ -457,22 +502,16 @@ def select_dependency(store: JsonPackageStore, draft: WorkingDraft,
         dep["permission_basis"] = permission_basis
         relevant = []
         for issue in source["issues"]:
-            affected = set(issue.get("resource_ids", []))
-            affected.update([issue[key] for key in ("resource_id", "source_id") if issue.get(key)])
-            relation = next((r for r in source["relationships"]
-                             if r["id"] == issue.get("relationship_id")), None)
-            if relation:
-                affected.update((relation["source_id"], relation["target_id"]))
-            proposal = next((p for p in source["proposals"]
-                             if p["id"] == issue.get("proposal_id")), None)
-            if proposal:
-                affected.add(proposal["target_id"])
-            if (affected & set(selected) or issue.get("kind") == "missing_base"
-                    or not affected and not issue.get("ref")):
-                copied = deepcopy(issue)
-                if affected:
-                    copied["resource_ids"] = sorted(affected)
-                relevant.append(copied)
+            affected, complete = _issue_scope(issue, source)
+            if complete and issue.get("scope") != "global" and not affected & set(selected):
+                continue  # Proven irrelevant to this selected subset.
+            copied = deepcopy(issue)
+            if complete:
+                copied["scope_proven"] = True
+                copied["resource_ids"] = sorted(affected & set(selected))
+            else:
+                copied["scope_unresolved"] = True
+            relevant.append(copied)
         dep["review_issues"] = relevant
         dep["review_scope_complete"] = True
     draft.dependencies = [d for d in draft.dependencies
@@ -570,12 +609,8 @@ def assess_rule_use(store: JsonPackageStore, content: dict[str, Any],
     def relevant_issues(current: dict[str, Any], rid: str,
                         path: list[dict[str, Any]],
                         cited_binding: dict[str, Any] | None = None) -> None:
-        relations = {r["id"]: r for r in current.get("relationships", [])}
-        proposals = {p["id"]: p for p in current.get("proposals", [])}
         for issue in current.get("issues", []):
             kind = issue.get("kind")
-            if kind == "missing_dependency":
-                continue  # A bound missing dependency is handled by resolution.
             if kind == "missing_base":
                 note("unknown", "base impact not established", path, issue)
                 continue
@@ -583,23 +618,16 @@ def assess_rule_use(store: JsonPackageStore, content: dict[str, Any],
                     and issue.get("source_id") == rid
                     and issue.get("binding") != cited_binding):
                 continue
-            scoped_ids = issue.get("resource_ids")
-            scoped = issue.get("resource_id") == rid or (
-                isinstance(scoped_ids, list) and rid in scoped_ids)
-            scoped = scoped or issue.get("source_id") == rid
-            relation = relations.get(issue.get("relationship_id"))
-            scoped = scoped or bool(relation and rid in
-                                    {relation["source_id"], relation["target_id"]})
-            proposal = proposals.get(issue.get("proposal_id"))
-            scoped = scoped or bool(proposal and proposal["target_id"] == rid)
-            known_scope = (issue.get("resource_id") in current.get("resources", {})
-                           or issue.get("source_id") in current.get("resources", {})
-                           or bool(isinstance(scoped_ids, list) and scoped_ids
-                                   and all(item in current.get("resources", {}) for item in scoped_ids))
-                           or bool(relation) or bool(proposal))
-            if scoped or issue.get("scope") == "global":
+            if issue.get("scope_unresolved"):
+                note("unknown", f"unresolved scope for {kind}", path, issue)
+                continue
+            if issue.get("scope_proven"):
+                affected, complete = set(issue.get("resource_ids", [])), True
+            else:
+                affected, complete = _issue_scope(issue, current)
+            if issue.get("scope") == "global" or complete and rid in affected:
                 note("limited", f"applicable {kind}", path, issue)
-            elif not known_scope:
+            elif not complete:
                 note("unknown", f"unscoped {kind}", path, issue)
 
     def walk(current: dict[str, Any], rule: dict[str, Any],

@@ -414,7 +414,8 @@ class PackageCycleTest(unittest.TestCase):
                 assessed = assess_rule_use(self.store, content, binding, source_id="watcher",
                                            audience="GM", workflow="playing")
                 self.assertEqual(assessed["use_readiness"], "unknown")
-                self.assertTrue(any(e["reason"] == "unscoped interpretation_pending"
+                self.assertTrue(any(e["status"] == "unknown" and
+                                    e.get("issue", {}).get("kind") == "interpretation_pending"
                                     for e in assessed["evidence"]))
                 if mode == "bundled":
                     self.assertNotIn("resource_ids", content["dependencies"][0]["review_issues"][0])
@@ -425,6 +426,74 @@ class PackageCycleTest(unittest.TestCase):
                                        audience="GM", workflow="playing")
             self.assertEqual(assessed["use_readiness"],
                              "unknown" if mode == "bundled" else "unavailable")
+
+    def test_ghost_scope_stays_unknown_when_bundled_and_reloaded(self) -> None:
+        calm = deepcopy(FIXTURE["external_rule"])
+        calm["review_coverage"] = ["playing"]
+        rules = make_source_package(
+            self.store, package_id="ghost-scope-rules", title="Ghost scope rules",
+            resources={"calm": calm},
+            diagnostics=[{"kind": "interpretation_pending", "resource_id": "ghost"}],
+        )
+        binding = {**ref(rules), "resource_id": "calm", "ruleset": "windmill-v1"}
+        watcher = deepcopy(FIXTURE["source_resources"]["watcher"])
+        watcher["rule_refs"] = [binding]
+        watcher["review_coverage"] = ["playing"]
+        saved_refs = []
+        for mode in ("linked", "bundled"):
+            draft = derive(self.store, ref(self.source), package_id=f"ghost-{mode}",
+                           title=f"Ghost {mode}")
+            edit_resource(draft, watcher)
+            select_dependency(self.store, draft, ref(rules), mode=mode,
+                              resource_ids=["calm"] if mode == "bundled" else None,
+                              permission_basis="project-authored fixture" if mode == "bundled" else None)
+            for form in ("delta", "snapshot"):
+                saved = save_derived(self.store, draft, form=form)
+                saved_refs.append((mode, ref(saved)))
+                content = effective_content(self.store, ref(saved))
+                assessed = assess_rule_use(self.store, content, binding, source_id="watcher",
+                                           audience="GM", workflow="playing")
+                self.assertEqual(assessed["use_readiness"], "unknown")
+                self.assertTrue(any(e["status"] == "unknown" and
+                                    e.get("issue", {}).get("kind") == "interpretation_pending"
+                                    for e in assessed["evidence"]))
+                if mode == "bundled":
+                    self.assertTrue(content["dependencies"][0]["review_issues"][0]["scope_unresolved"])
+        self.store.path_for(**ref(rules)).unlink()
+        for mode, saved_ref in saved_refs:
+            content = effective_content(self.store, saved_ref)
+            assessed = assess_rule_use(self.store, content, binding, source_id="watcher",
+                                       audience="GM", workflow="playing")
+            self.assertEqual(assessed["use_readiness"],
+                             "unknown" if mode == "bundled" else "unavailable")
+
+    def test_unresolved_relationship_proposal_and_mixed_scope_are_unknown(self) -> None:
+        for index, locator in enumerate((
+                {"relationship_id": "ghost-relation"},
+                {"proposal_id": "ghost-proposal"},
+                {"resource_ids": ["calm", "ghost"]}), start=1):
+            calm = deepcopy(FIXTURE["external_rule"])
+            calm["review_coverage"] = ["playing"]
+            rules = make_source_package(
+                self.store, package_id=f"bad-scope-{index}", title="Bad scope",
+                resources={"calm": calm},
+                diagnostics=[{"kind": "interpretation_pending", **locator}],
+            )
+            binding = {**ref(rules), "resource_id": "calm", "ruleset": "windmill-v1"}
+            watcher = deepcopy(FIXTURE["source_resources"]["watcher"])
+            watcher["rule_refs"] = [binding]
+            watcher["review_coverage"] = ["playing"]
+            draft = derive(self.store, ref(self.source), package_id=f"bad-scope-use-{index}",
+                           title="Bad scope use")
+            edit_resource(draft, watcher)
+            select_dependency(self.store, draft, ref(rules), mode="bundled",
+                              resource_ids=["calm"], permission_basis="project-authored fixture")
+            saved = save_derived(self.store, draft, form="snapshot")
+            content = effective_content(self.store, ref(saved))
+            self.assertTrue(content["dependencies"][0]["review_issues"][0]["scope_unresolved"])
+            assessed = assess_rule_use(self.store, content, binding, source_id="watcher",
+                                       audience="GM", workflow="playing")
+            self.assertEqual(assessed["use_readiness"], "unknown")
 
 
 if __name__ == "__main__":
