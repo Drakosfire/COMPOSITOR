@@ -10,6 +10,8 @@ from copy import deepcopy
 from dataclasses import dataclass
 from hashlib import sha256
 import json
+import math
+import re
 from pathlib import Path
 from typing import Any
 
@@ -42,6 +44,95 @@ def _check_source(project_root: Path, path_name: str, expected_sha256: str,
         raise CompositionError(f"source revision mismatch for {path_name}")
 
 
+_HEX64 = re.compile(r"^[0-9a-f]{64}$")
+_OWNER_ROUTE = "rules_ingestion_ab"
+_OWNER_ARTIFACTS = ("stageA.page.json", "stageA.surface.md",
+                    "stageA.surface.ast.json", "stageA.gate_diagnostics.json",
+                    "stageB.evidence_units.json")
+
+
+def _validate_owner_manifest(manifest: dict[str, Any]) -> None:
+    """Validate COMPOSITOR's wrapper around unmodified Mark III page artifacts."""
+    recipe = manifest.get("owner_recipe")
+    usage = manifest.get("provider_usage")
+    if not isinstance(recipe, dict) or not isinstance(usage, dict):
+        raise CompositionError("owner recipe and provider usage status required")
+    if (recipe.get("stage") != "mark3_ab" or
+            not isinstance(recipe.get("recovery_method"), str) or
+            not recipe["recovery_method"].strip() or
+            recipe["recovery_method"] != manifest.get("recovery_method") or
+            not isinstance(recipe.get("model_id"), str) or
+            not recipe["model_id"].strip() or
+            not isinstance(recipe.get("prompt"), str) or
+            type(recipe.get("dpi")) is not int or recipe["dpi"] <= 0):
+        raise CompositionError("invalid owner recipe")
+    if usage.get("status") not in {"known", "unknown"}:
+        raise CompositionError("provider usage status must be known or unknown")
+    if usage["status"] == "known":
+        if (type(usage.get("calls")) is not int or usage["calls"] < 0 or
+                type(usage.get("spend_usd")) not in (int, float) or
+                not math.isfinite(usage["spend_usd"]) or usage["spend_usd"] < 0 or
+                not isinstance(usage.get("provider"), str) or
+                not usage["provider"].strip()):
+            raise CompositionError("invalid known provider usage")
+        if usage["calls"] > 0:
+            receipt = usage.get("receipt")
+            if (not isinstance(receipt, dict) or
+                    not isinstance(receipt.get("path"), str) or
+                    not isinstance(receipt.get("sha256"), str) or
+                    not _HEX64.fullmatch(receipt["sha256"])):
+                raise CompositionError("provider usage receipt required")
+        elif usage.get("basis") != "local_inference":
+            raise CompositionError("zero provider calls require local inference basis")
+    elif (usage.get("calls") is not None or usage.get("spend_usd") is not None or
+          usage.get("receipt") is not None):
+        raise CompositionError("unknown usage cannot claim calls or spend")
+    pages = manifest.get("pages")
+    expected = manifest.get("expected_page_indices")
+    if (not isinstance(pages, list) or not pages or
+            not isinstance(expected, list) or
+            any(not isinstance(i, int) or i < 0 for i in expected) or
+            len(expected) != len(set(expected)) or expected != sorted(expected)):
+        raise CompositionError("invalid owner page order")
+    indices = [page.get("page_index") for page in pages if isinstance(page, dict)]
+    if indices != expected:
+        raise CompositionError("owner page order differs from expected pages")
+    for page in pages:
+        folder = page.get("artifact_dir")
+        hashes = page.get("artifact_sha256")
+        if (not isinstance(folder, str) or folder != f"page-{page['page_index']}" or
+                not isinstance(hashes, dict) or
+                any(not isinstance(hashes.get(name), str) or
+                    not _HEX64.fullmatch(hashes[name]) for name in _OWNER_ARTIFACTS) or
+                not isinstance(page.get("owner_source_pdf"), str) or
+                not page["owner_source_pdf"].strip() or
+                not isinstance(page.get("page_fingerprint"), str) or
+                not _HEX64.fullmatch(page["page_fingerprint"])):
+            raise CompositionError("invalid owner page pin")
+
+
+def _check_owner_page(page: dict[str, Any],
+                      manifest: dict[str, Any], surface: str, ast: dict[str, Any],
+                      record: dict[str, Any], stage_b: dict[str, Any]) -> None:
+    recipe = manifest["owner_recipe"]
+    index = page["page_index"]
+    fingerprint = page["page_fingerprint"]
+    if (record.get("page_index") != index or
+            record.get("page_fingerprint") != fingerprint or
+            record.get("raw_markdown") != surface or
+            record.get("model_id") != recipe["model_id"] or
+            record.get("prompt") != recipe["prompt"] or
+            record.get("source_pdf") != page.get("owner_source_pdf") or
+            not isinstance(record.get("content_hash"), str) or
+            not _HEX64.fullmatch(record["content_hash"]) or
+            record.get("content_version") != f"{recipe['model_id']}-dpi{recipe['dpi']}" or
+            ast.get("page_fingerprint") != fingerprint or
+            any(unit.get("page_fingerprint") != fingerprint or
+                unit.get("content_version") != record.get("content_version")
+                for unit in stage_b.get("units", []))):
+        raise CompositionError(f"owner Stage A/B identity mismatch: page {index}")
+
+
 def load_evidence_draft(store: JsonPackageStore, bundle_dir: Path, *,
                         project_root: Path, package_id: str, title: str,
                         expected_rules_ingestion_ref: str,
@@ -53,11 +144,21 @@ def load_evidence_draft(store: JsonPackageStore, bundle_dir: Path, *,
     if sha256(manifest_path.read_bytes()).hexdigest() != expected_manifest_sha256:
         raise CompositionError("evidence manifest revision mismatch")
     manifest = _read_json(manifest_path)
-    if manifest.get("format_version") != 1 or manifest.get("route") not in {"pdf_text", "supplied_markdown"}:
+    if manifest.get("format_version") != 1 or manifest.get("route") not in {
+            "pdf_text", "supplied_markdown", _OWNER_ROUTE}:
         raise CompositionError("unsupported evidence bundle")
     if manifest.get("rules_ingestion_ref") != expected_rules_ingestion_ref:
         raise CompositionError("RulesIngestion contract revision mismatch")
     route = manifest["route"]
+    if route == _OWNER_ROUTE:
+        _validate_owner_manifest(manifest)
+        receipt = manifest["provider_usage"].get("receipt")
+        if receipt is not None:
+            receipt_path = Path(receipt["path"])
+            if (receipt_path.is_absolute() or ".." in receipt_path.parts or
+                    not (bundle_dir / receipt_path).is_file() or
+                    sha256((bundle_dir / receipt_path).read_bytes()).hexdigest() != receipt["sha256"]):
+                raise CompositionError("provider usage receipt revision mismatch")
     direct_source_sha256 = (manifest["supplied_markdown_sha256"]
                             if route == "supplied_markdown" else manifest["source_pdf_sha256"])
     diagnostics: list[dict[str, Any]] = deepcopy(manifest.get("known_omissions", []))
@@ -78,8 +179,9 @@ def load_evidence_draft(store: JsonPackageStore, bundle_dir: Path, *,
             diagnostics.append({"kind": "missing_page", "page_index": page_index})
             continue
         page_dir = bundle_dir / page["artifact_dir"]
-        names = ("stageA.surface.md", "stageA.surface.ast.json", "stageA.gate_diagnostics.json",
-                 "stageB.evidence_units.json")
+        names = (_OWNER_ARTIFACTS if route == _OWNER_ROUTE else
+                 ("stageA.surface.md", "stageA.surface.ast.json", "stageA.gate_diagnostics.json",
+                  "stageB.evidence_units.json"))
         missing = [name for name in names if not (page_dir / name).is_file()]
         if missing:
             diagnostics.append({"kind": "missing_artifact", "page_index": page_index,
@@ -88,10 +190,18 @@ def load_evidence_draft(store: JsonPackageStore, bundle_dir: Path, *,
         for name in names:
             if sha256((page_dir / name).read_bytes()).hexdigest() != page["artifact_sha256"][name]:
                 raise CompositionError(f"evidence artifact revision mismatch: {page_index}/{name}")
-        surface = (page_dir / names[0]).read_text(encoding="utf-8")
-        ast = _read_json(page_dir / names[1])
-        stage_a_gates = _read_json(page_dir / names[2])
-        stage_b = _read_json(page_dir / names[3])
+        if route == _OWNER_ROUTE:
+            record = _read_json(page_dir / names[0])
+            surface = (page_dir / names[1]).read_text(encoding="utf-8")
+            ast = _read_json(page_dir / names[2])
+            stage_a_gates = _read_json(page_dir / names[3])
+            stage_b = _read_json(page_dir / names[4])
+            _check_owner_page(page, manifest, surface, ast, record, stage_b)
+        else:
+            surface = (page_dir / names[0]).read_text(encoding="utf-8")
+            ast = _read_json(page_dir / names[1])
+            stage_a_gates = _read_json(page_dir / names[2])
+            stage_b = _read_json(page_dir / names[3])
         if ast.get("page_fingerprint") != page["page_fingerprint"]:
             diagnostics.append({"kind": "evidence_mismatch", "page_index": page_index,
                                 "reason": "Stage A fingerprint differs from manifest"})
@@ -129,12 +239,18 @@ def load_evidence_draft(store: JsonPackageStore, bundle_dir: Path, *,
             }
     package = make_source_package(store, package_id=package_id, title=title,
                                   resources=resources, diagnostics=diagnostics)
-    return EvidenceDraftResult(package=package, report={
+    report = {
         "route": route, "recovery_method": manifest["recovery_method"],
         "rules_ingestion_ref": manifest["rules_ingestion_ref"],
         "source_pdf_sha256": manifest["source_pdf_sha256"],
         "supplied_markdown_sha256": manifest.get("supplied_markdown_sha256"),
         "direct_source_sha256": direct_source_sha256,
         "unit_count": len(resources), "gate_report": gate_report,
-        "diagnostics": deepcopy(diagnostics), "provider_calls": manifest["provider_calls"],
-    })
+        "diagnostics": deepcopy(diagnostics),
+        "provider_calls": (manifest["provider_usage"]["calls"] if route == _OWNER_ROUTE
+                           else manifest["provider_calls"]),
+    }
+    if route == _OWNER_ROUTE:
+        report["owner_recipe"] = deepcopy(manifest["owner_recipe"])
+        report["provider_usage"] = deepcopy(manifest["provider_usage"])
+    return EvidenceDraftResult(package=package, report=report)

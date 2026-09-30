@@ -1,0 +1,142 @@
+{
+  "gate_diagnostics": [
+    {
+      "detail": {
+        "note": "standalone page, no prior context",
+        "orphan_count": 6,
+        "total_units": 6
+      },
+      "gate_name": "orphan",
+      "passed": true
+    },
+    {
+      "detail": {
+        "overlap_count": 0,
+        "overlaps": [],
+        "total_units": 6
+      },
+      "gate_name": "bleed",
+      "passed": true
+    },
+    {
+      "detail": {
+        "issue_count": 0,
+        "issues": [],
+        "table_unit_count": 0
+      },
+      "gate_name": "table_integrity",
+      "passed": true
+    },
+    {
+      "detail": {
+        "max_chars": 5000,
+        "max_table_chars": 12000,
+        "min_chars": 20,
+        "oversized": [],
+        "oversized_count": 0,
+        "total_units": 6,
+        "undersized": [],
+        "undersized_count": 0,
+        "undersized_fail_ratio": 1.0,
+        "undersized_ratio": 0.0
+      },
+      "gate_name": "unit_size",
+      "passed": true
+    }
+  ],
+  "gates_passed": true,
+  "salvage_score": 1.0,
+  "unit_count": 6,
+  "units": [
+    {
+      "anomaly_flags": [
+        "no_heading_parent"
+      ],
+      "content_hash": "c61250a23aeb3fbf2e1599083d1ad6e477bb80ad87091c9873377548bb4bb344",
+      "content_version": "fixture/synthetic-mark3-envelope-dpi200",
+      "ordering_key": 0,
+      "page_fingerprint": "812634aa78fe741dac30201af8e102fc5ee3e509d31d7280f38f1d395c138019",
+      "source_line_end": 1,
+      "source_line_start": 0,
+      "structural_path": [],
+      "text": "North Mill Field Notes",
+      "unit_id": "8f2a61e4a998d02e3b1b010f0d40dcab0e83a17d8f43cba981591664bd1f41a2",
+      "unit_type": "prose"
+    },
+    {
+      "anomaly_flags": [
+        "no_heading_parent"
+      ],
+      "content_hash": "a53935e6058f9b478c9f186f615bdb4fef444a4560fd47aa4e042ab4bbd8b798",
+      "content_version": "fixture/synthetic-mark3-envelope-dpi200",
+      "ordering_key": 1,
+      "page_fingerprint": "812634aa78fe741dac30201af8e102fc5ee3e509d31d7280f38f1d395c138019",
+      "source_line_end": 4,
+      "source_line_start": 2,
+      "structural_path": [],
+      "text": "Arrival\nA letter invites the party to inspect a noisy windmill.",
+      "unit_id": "2e06ea7a38723114cd6579ada22320f14225b1379c5fb2fa0b46549c1dcbb4d7",
+      "unit_type": "prose"
+    },
+    {
+      "anomaly_flags": [
+        "no_heading_parent"
+      ],
+      "content_hash": "70c969777328dbdc2ecca1fed45f3e4d8e0a33f1ec6babc42d0a15fbb5172cd2",
+      "content_version": "fixture/synthetic-mark3-envelope-dpi200",
+      "ordering_key": 2,
+      "page_fingerprint": "812634aa78fe741dac30201af8e102fc5ee3e509d31d7280f38f1d395c138019",
+      "source_line_end": 9,
+      "source_line_start": 7,
+      "structural_path": [],
+      "text": "Wind Step\nA gust moves a token one space.",
+      "unit_id": "53d4008d8f67cf8ebb2b5cfd7e30d61939f5dc6eabae0a4c67ce676affedace4",
+      "unit_type": "prose"
+    },
+    {
+      "anomaly_flags": [
+        "no_heading_parent"
+      ],
+      "content_hash": "0d2e5ef6ac7943c3d4a5b0e39b512ad3c26eb2c25a36b9552a9bd00e0011d653",
+      "content_version": "fixture/synthetic-mark3-envelope-dpi200",
+      "ordering_key": 3,
+      "page_fingerprint": "812634aa78fe741dac30201af8e102fc5ee3e509d31d7280f38f1d395c138019",
+      "source_line_end": 14,
+      "source_line_start": 12,
+      "structural_path": [],
+      "text": "Mill Watcher\nThe watcher can move a token one space with Wind Step.",
+      "unit_id": "911cf8e8c848dba5ca546fcbcc58e99fa926a8ebb39b1c21200ed72278b1df3b",
+      "unit_type": "prose"
+    },
+    {
+      "anomaly_flags": [
+        "no_heading_parent"
+      ],
+      "content_hash": "7ad377d0ed520a435a5fd49c68fb21de398df0c1800319c271b16a3fabdef44c",
+      "content_version": "fixture/synthetic-mark3-envelope-dpi200",
+      "ordering_key": 4,
+      "page_fingerprint": "812634aa78fe741dac30201af8e102fc5ee3e509d31d7280f38f1d395c138019",
+      "source_line_end": 19,
+      "source_line_start": 17,
+      "structural_path": [],
+      "text": "Hidden Gear\nThe miller concealed a cracked gear beneath the floor.",
+      "unit_id": "833b4de365a02adbbb9a4a9514551a5085655e1b29dca498921db20c9d155acb",
+      "unit_type": "prose"
+    },
+    {
+      "anomaly_flags": [
+        "no_heading_parent"
+      ],
+      "content_hash": "3c818328b781f1babe8ec0e2e0f6dc5587e43b0100971983765b75d9346e5da2",
+      "content_version": "fixture/synthetic-mark3-envelope-dpi200",
+      "ordering_key": 5,
+      "page_fingerprint": "812634aa78fe741dac30201af8e102fc5ee3e509d31d7280f38f1d395c138019",
+      "source_line_end": 24,
+      "source_line_start": 23,
+      "structural_path": [],
+      "text": "Project-authored COMPOSITOR engineering fixture | Page 1",
+      "unit_id": "dc585fb52c47de49403860141ea0075346695ead339dd12d4b5bc3630edfd4f1",
+      "unit_type": "prose"
+    }
+  ]
+}

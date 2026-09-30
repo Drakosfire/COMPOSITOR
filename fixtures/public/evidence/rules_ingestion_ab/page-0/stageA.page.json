@@ -1,0 +1,11 @@
+{
+  "content_hash": "7949427d2edebca896ae5e151ab9be0e4989d830bdaa427c98429682f464840c",
+  "content_version": "fixture/synthetic-mark3-envelope-dpi200",
+  "inference_elapsed_sec": 0.0,
+  "model_id": "fixture/synthetic-mark3-envelope",
+  "page_fingerprint": "812634aa78fe741dac30201af8e102fc5ee3e509d31d7280f38f1d395c138019",
+  "page_index": 0,
+  "prompt": "synthetic fixture: no OCR inference",
+  "raw_markdown": "North Mill Field Notes\n\nArrival\nA letter invites the party to inspect a noisy windmill.\n\n\n\nWind Step\nA gust moves a token one space.\n\n\n\nMill Watcher\nThe watcher can move a token one space with Wind Step.\n\n\n\nHidden Gear\nThe miller concealed a cracked gear beneath the floor.\n\n\n\n\nProject-authored COMPOSITOR engineering fixture | Page 1\n",
+  "source_pdf": "fixtures/public/windmill-field-notes.pdf"
+}
