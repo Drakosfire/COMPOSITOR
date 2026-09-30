@@ -36,6 +36,10 @@ This work builds on existing RulesIngestion research and tooling. [DungeonOverMi
 
 Read [AGENTS.md](AGENTS.md) before agent-assisted work. Follow the current operator direction and record the write, data, runtime, provider, and budget scope needed by the assigned work. Design decisions do not automatically authorize paid runs or production changes.
 
+Copy [.env.example](.env.example) to `.env` and fill the source paths and settings needed for your local experiments. The names are proposed configuration for upcoming implementation; no loader consumes them yet. `.env` stays local.
+
+Keep private PDFs, processed Markdown, reviewed gold, source-derived packages, media, and replay exports under `.local/private/` (or at external paths named in `.env`). Write generated runs and diagnostics under `.local/out/`; preserve first results and later repairs in separate run directories. Both roots are ignored by Git. Other common private corpus and artifact directories are ignored as a safeguard. Put intentionally public, project-authored fixtures under `fixtures/public/` and source-safe benchmark definitions under `evals/public/` once those directories are created. Review any file before explicitly adding it to the public repo.
+
 There is no installation or test command to run yet. The first implementation PR should add only the dependencies, fixture, workflow, and verification needed for its bounded baseline, then document their actual commands here.
 
 ## Open-source status
