@@ -52,6 +52,8 @@ The [Sheep JPEG asset-projection record](Docs/Implementation/RECORD-20-sheep-jpe
 
 The [package-based review-packet record](Docs/Implementation/RECORD-21-package-review-packet.md) pins an unjudged Sheep packet from the separate OCR, package, gold, and asset revisions. Source-fidelity and integration cases remain distinct.
 
+The [Sheep source-fidelity adjudication](Docs/Implementation/RECORD-22-sheep-source-fidelity-adjudication.md) reports explicit findings for 48 frozen source cases. The seven owner integration witnesses remain unexecuted.
+
 ## Open-source status
 
 The project is intended to be public open-source software. A license has not yet been selected for this repository; until one is added, do not assume the code is licensed for reuse. Contributions and redistribution guidance will follow that decision.
