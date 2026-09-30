@@ -1,0 +1,28 @@
+{
+  "expected_assets": [],
+  "expected_page_indices": [
+    0
+  ],
+  "format_version": 1,
+  "pages": [
+    {
+      "artifact_dir": "page-0",
+      "artifact_sha256": {
+        "stageA.gate_diagnostics.json": "9db2699a1323bb4dbb6bf69fe6723bc296dd7beae44f123d3254db7c75f445c9",
+        "stageA.surface.ast.json": "e239a5aac2d85dcca95415369c89f39b8f008dadf08eefe070cf54b420f3c98a",
+        "stageA.surface.md": "a0998c2cf145f3c302602ee18bc5cf5202ccf15fec075aed129ed78ca706b2b6",
+        "stageB.evidence_units.json": "ce315855daddfb6a1246474fcfe279de71d0242a2e9cc3a31e6e429b79608c74"
+      },
+      "page_fingerprint": "812634aa78fe741dac30201af8e102fc5ee3e509d31d7280f38f1d395c138019",
+      "page_index": 0
+    }
+  ],
+  "provider_calls": 0,
+  "recovery_method": "provided_markdown_override",
+  "route": "supplied_markdown",
+  "rules_ingestion_ref": "17854ad6eaf9aa8bdfc483f8c3eb0a6099f0bbd8",
+  "source_pdf": "fixtures/public/windmill-field-notes.pdf",
+  "source_pdf_sha256": "30b2410b4ce88542617a1b80923ed04b1a9db900a0a382fe65421897f75496c4",
+  "supplied_markdown": "fixtures/public/windmill-field-notes.md",
+  "supplied_markdown_sha256": "a0998c2cf145f3c302602ee18bc5cf5202ccf15fec075aed129ed78ca706b2b6"
+}

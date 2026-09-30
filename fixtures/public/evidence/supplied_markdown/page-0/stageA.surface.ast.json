@@ -1,0 +1,88 @@
+{
+  "content_hash": "95ba368338286b34081bf20bab5b899ba3d23d3cf37e3bf746bfc77338a927d8",
+  "node_count": 10,
+  "page_fingerprint": "812634aa78fe741dac30201af8e102fc5ee3e509d31d7280f38f1d395c138019",
+  "root": {
+    "children": [
+      {
+        "children": [
+          {
+            "children": [
+              {
+                "level": 0,
+                "node_type": "paragraph",
+                "source_line_end": 5,
+                "source_line_start": 4,
+                "text": "A letter invites the party to inspect a noisy windmill."
+              }
+            ],
+            "level": 2,
+            "node_type": "heading",
+            "source_line_end": 3,
+            "source_line_start": 2,
+            "text": "Arrival"
+          },
+          {
+            "children": [
+              {
+                "level": 0,
+                "node_type": "paragraph",
+                "source_line_end": 9,
+                "source_line_start": 8,
+                "text": "A gust moves a token one space."
+              }
+            ],
+            "level": 2,
+            "node_type": "heading",
+            "source_line_end": 7,
+            "source_line_start": 6,
+            "text": "Wind Step"
+          },
+          {
+            "children": [
+              {
+                "level": 0,
+                "node_type": "paragraph",
+                "source_line_end": 13,
+                "source_line_start": 12,
+                "text": "The watcher can move a token one space with Wind Step."
+              }
+            ],
+            "level": 2,
+            "node_type": "heading",
+            "source_line_end": 11,
+            "source_line_start": 10,
+            "text": "Mill Watcher"
+          },
+          {
+            "children": [
+              {
+                "level": 0,
+                "node_type": "paragraph",
+                "source_line_end": 17,
+                "source_line_start": 16,
+                "text": "The miller concealed a cracked gear beneath the floor."
+              }
+            ],
+            "level": 2,
+            "node_type": "heading",
+            "source_line_end": 15,
+            "source_line_start": 14,
+            "text": "Hidden Gear"
+          }
+        ],
+        "level": 1,
+        "node_type": "heading",
+        "source_line_end": 1,
+        "source_line_start": 0,
+        "text": "North Mill Field Notes"
+      }
+    ],
+    "level": 0,
+    "node_type": "root",
+    "source_line_end": 17,
+    "source_line_start": 0,
+    "text": ""
+  },
+  "table_count": 0
+}

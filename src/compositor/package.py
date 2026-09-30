@@ -123,6 +123,10 @@ def _validate(package: dict[str, Any]) -> None:
         _ref(ref)
     _dependencies(package.get("dependencies"))
     _relationships(package.get("relationships"))
+    diagnostics = package.get("diagnostics", [])
+    if not isinstance(diagnostics, list) or any(not isinstance(item, dict) or not item.get("kind")
+                                                for item in diagnostics):
+        raise CompositionError("diagnostics must be typed objects")
     proposals = package.get("proposals")
     if not isinstance(proposals, list):
         raise CompositionError("proposals must be a list")
@@ -195,18 +199,24 @@ class JsonPackageStore:
 def make_source_package(store: JsonPackageStore, *, package_id: str, title: str,
                         resources: dict[str, dict[str, Any]],
                         relationships: list[dict[str, Any]] | None = None,
-                        dependencies: list[dict[str, Any]] | None = None) -> dict[str, Any]:
-    return store.save({"format_version": 1, "package_id": package_id, "title": title,
-                       "form": "source", "lineage": [], "resources": resources,
-                       "relationships": relationships or [],
-                       "dependencies": dependencies or [], "proposals": []})
+                        dependencies: list[dict[str, Any]] | None = None,
+                        diagnostics: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    package = {"format_version": 1, "package_id": package_id, "title": title,
+               "form": "source", "lineage": [], "resources": resources,
+               "relationships": relationships or [],
+               "dependencies": dependencies or [], "proposals": []}
+    if diagnostics:
+        package["diagnostics"] = diagnostics
+    return store.save(package)
 
 
 def readiness(issues: list[dict[str, Any]]) -> dict[str, str]:
     """Conservative first-pass statuses; task-specific assessment comes later."""
     kinds = {item["kind"] for item in issues}
     return {
-        "worldbuilding": "limited" if kinds & {"missing_base", "unresolved_rule", "unresolved_relationship"} else "usable",
+        "worldbuilding": "limited" if kinds & {"missing_base", "unresolved_rule", "unresolved_relationship",
+                                            "missing_page", "missing_asset", "missing_artifact",
+                                            "missing_source", "gate_failure", "evidence_mismatch"} else "usable",
         "planning": "limited" if kinds else "usable",
         "playing": "limited" if kinds else "usable",
     }
@@ -223,6 +233,8 @@ def effective_content(store: JsonPackageStore, ref: dict[str, str], *,
     seen.add(key)
     package = store.load(exact)
     issues: list[dict[str, Any]] = []
+    diagnostics = deepcopy(package.get("diagnostics", []))
+    issues.extend(diagnostics)
     if package["form"] == "delta":
         try:
             parent = effective_content(store, package["base"], _seen=seen)
@@ -285,6 +297,7 @@ def effective_content(store: JsonPackageStore, ref: dict[str, str], *,
         "dependencies": deepcopy(package["dependencies"]),
         "proposals": deepcopy(package["proposals"]),
         "lineage": deepcopy(package["lineage"]),
+        "diagnostics": diagnostics,
         "issues": issues, "readiness": readiness(issues),
     }
 
@@ -297,6 +310,7 @@ class WorkingDraft:
     resources: dict[str, dict[str, Any]]
     relationships: list[dict[str, Any]]
     dependencies: list[dict[str, Any]]
+    diagnostics: list[dict[str, Any]] = field(default_factory=list)
     proposals: list[dict[str, Any]] = field(default_factory=list)
 
 
@@ -308,6 +322,7 @@ def derive(store: JsonPackageStore, base: dict[str, str], *, package_id: str,
         base=_ref(base), resources=deepcopy(content["resources"]),
         relationships=deepcopy(content["relationships"]),
         dependencies=deepcopy(content["dependencies"]),
+        diagnostics=deepcopy(content["diagnostics"]),
         proposals=deepcopy(content["proposals"]),
     )
 
@@ -388,6 +403,7 @@ def save_derived(store: JsonPackageStore, draft: WorkingDraft, *,
         "lineage": [deepcopy(draft.base), *deepcopy(base_content["lineage"])],
         "relationships": deepcopy(draft.relationships),
         "dependencies": deepcopy(draft.dependencies),
+        "diagnostics": deepcopy(draft.diagnostics),
         "proposals": deepcopy(draft.proposals),
     }
     if form == "snapshot":

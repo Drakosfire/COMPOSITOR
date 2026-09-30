@@ -1,0 +1,120 @@
+{
+  "gate_diagnostics": [
+    {
+      "detail": {
+        "fail_threshold": 1.0,
+        "orphan_count": 0,
+        "orphan_rate": 0.0,
+        "orphans": [],
+        "total_units": 4,
+        "warn_threshold": 0.5,
+        "warned": false
+      },
+      "gate_name": "orphan",
+      "passed": true
+    },
+    {
+      "detail": {
+        "overlap_count": 0,
+        "overlaps": [],
+        "total_units": 4
+      },
+      "gate_name": "bleed",
+      "passed": true
+    },
+    {
+      "detail": {
+        "issue_count": 0,
+        "issues": [],
+        "table_unit_count": 0
+      },
+      "gate_name": "table_integrity",
+      "passed": true
+    },
+    {
+      "detail": {
+        "max_chars": 5000,
+        "max_table_chars": 12000,
+        "min_chars": 20,
+        "oversized": [],
+        "oversized_count": 0,
+        "total_units": 4,
+        "undersized": [],
+        "undersized_count": 0,
+        "undersized_fail_ratio": 1.0,
+        "undersized_ratio": 0.0
+      },
+      "gate_name": "unit_size",
+      "passed": true
+    }
+  ],
+  "gates_passed": true,
+  "salvage_score": 1.0,
+  "unit_count": 4,
+  "units": [
+    {
+      "anomaly_flags": [],
+      "content_hash": "7e158020544a289f6ef9e3fa1d78d1a894120a8f2744f1828f57a971d9aa461c",
+      "content_version": "supplied_markdown-rules-ingestion-17854ad6eaf9",
+      "ordering_key": 0,
+      "page_fingerprint": "812634aa78fe741dac30201af8e102fc5ee3e509d31d7280f38f1d395c138019",
+      "source_line_end": 5,
+      "source_line_start": 0,
+      "structural_path": [
+        "North Mill Field Notes",
+        "Arrival"
+      ],
+      "text": "North Mill Field Notes — Arrival — A letter invites the party to inspect a noisy windmill.",
+      "unit_id": "ac23a0605c3f6bd8adc8389bcb72ac31f0770109c0c20103cd3eec67250382ed",
+      "unit_type": "prose"
+    },
+    {
+      "anomaly_flags": [],
+      "content_hash": "94d10fb02bbae6f5d7d36c165fc96899d7a076b30c8436dd6df27ec93aa5b65d",
+      "content_version": "supplied_markdown-rules-ingestion-17854ad6eaf9",
+      "ordering_key": 1,
+      "page_fingerprint": "812634aa78fe741dac30201af8e102fc5ee3e509d31d7280f38f1d395c138019",
+      "source_line_end": 9,
+      "source_line_start": 6,
+      "structural_path": [
+        "North Mill Field Notes",
+        "Wind Step"
+      ],
+      "text": "Wind Step — A gust moves a token one space.",
+      "unit_id": "3ecc63a35ccd654c65ddf6ac0d4ab91d305f97638c92df52db41e4796b5cb042",
+      "unit_type": "prose"
+    },
+    {
+      "anomaly_flags": [],
+      "content_hash": "7576d38f7ef5ea88ef7d047ac4c6fa5a9b1afe06e4d22232e1d41b553f7bb4d1",
+      "content_version": "supplied_markdown-rules-ingestion-17854ad6eaf9",
+      "ordering_key": 2,
+      "page_fingerprint": "812634aa78fe741dac30201af8e102fc5ee3e509d31d7280f38f1d395c138019",
+      "source_line_end": 13,
+      "source_line_start": 10,
+      "structural_path": [
+        "North Mill Field Notes",
+        "Mill Watcher"
+      ],
+      "text": "Mill Watcher — The watcher can move a token one space with Wind Step.",
+      "unit_id": "03462ba00d4223a76460b6006658d489d4d738a45a02135ce2cd7e35ca3f6a89",
+      "unit_type": "prose"
+    },
+    {
+      "anomaly_flags": [],
+      "content_hash": "0d1470f9af2c023cd701ab78239fb25dc2dca8be2fae17bd4d422c5b26648be1",
+      "content_version": "supplied_markdown-rules-ingestion-17854ad6eaf9",
+      "ordering_key": 3,
+      "page_fingerprint": "812634aa78fe741dac30201af8e102fc5ee3e509d31d7280f38f1d395c138019",
+      "source_line_end": 17,
+      "source_line_start": 14,
+      "structural_path": [
+        "North Mill Field Notes",
+        "Hidden Gear"
+      ],
+      "text": "Hidden Gear — The miller concealed a cracked gear beneath the floor.",
+      "unit_id": "41924f0d1083d08b7684d4312923e4794bf06622a1c74103c0b4467740fbf5c0",
+      "unit_type": "prose"
+    }
+  ]
+}

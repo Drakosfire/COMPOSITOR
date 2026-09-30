@@ -1,0 +1,28 @@
+{
+  "expected_assets": [],
+  "expected_page_indices": [
+    0
+  ],
+  "format_version": 1,
+  "pages": [
+    {
+      "artifact_dir": "page-0",
+      "artifact_sha256": {
+        "stageA.gate_diagnostics.json": "b65b6749b327eb9d880c4b006c7c8d513e2432d96d584af67fe75fdf61e9eb84",
+        "stageA.surface.ast.json": "a4c1c66e38e0eee977b66c07dd60181f792160567392c94137dbedf66d74cce1",
+        "stageA.surface.md": "71d9747471c710fca61f5bef43579c46ef192880497686ffc127b1a2f75df2ab",
+        "stageB.evidence_units.json": "c980d7604564e0fe8f50c8b7eecf5c1397611e4c1c1ed7a889d57e13b01eb0d4"
+      },
+      "page_fingerprint": "812634aa78fe741dac30201af8e102fc5ee3e509d31d7280f38f1d395c138019",
+      "page_index": 0
+    }
+  ],
+  "provider_calls": 0,
+  "recovery_method": "poppler_pdftotext_layout",
+  "route": "pdf_text",
+  "rules_ingestion_ref": "17854ad6eaf9aa8bdfc483f8c3eb0a6099f0bbd8",
+  "source_pdf": "fixtures/public/windmill-field-notes.pdf",
+  "source_pdf_sha256": "30b2410b4ce88542617a1b80923ed04b1a9db900a0a382fe65421897f75496c4",
+  "supplied_markdown": null,
+  "supplied_markdown_sha256": null
+}
