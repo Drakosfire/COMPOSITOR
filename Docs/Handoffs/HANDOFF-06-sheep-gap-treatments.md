@@ -20,6 +20,12 @@ The selected publisher v2 PDF is SHA-256 `a92a7d6f67432dfacd935161a7c90a6ec9ba7f
 
 The seven integration-contract cases are a separate owner program: source selection and unload, audience scope, adaptation and save/reload, blank World and Eldyrwild projection, and rule interaction require pinned DungeonMind/WorldKeeper, Buddy, and rule-consumer paths. A COMPOSITOR helper result cannot stand in for those witnesses. PRIME sequences their write leases and merge order.
 
+## Tight Jev decision-loop hypothesis — inactive
+
+PRIME proposed exploring a narrow review loop for claims whose evidence is already present but whose **typed relationship or uncertainty** is missing: identity/form (005), charge timing and authored-ending tension (039, 043), and possibly scene/grey-box typing (002). Candidate discovery should be gold-blind across the whole package, with exact source quote, physical page, resource IDs, and the proposed relation or diagnostic. Each review asks one bounded choice with an explicit **unresolved** option. A decision records source basis and rationale; deterministic validation and human review precede any additive immutable package revision. Re-adjudicate all 48 cases for regressions and measure candidate-generation, decision, and reviewer effort separately. The loop must add typed decisions rather than replacement prose or unverified World truth.
+
+The printed statblock conflict (013) should be **detected deterministically** by comparing printed values; a review loop may route its disposition but must preserve both original values. OCR omissions and corruptions (026, 027, 038), map meaning (022), and edition-specific rule bindings (012, 034) lack evidence or authority that a narrow choice can create. They retain the owner/source/rule gates above. Jev would be an **additional model experiment**; this design hypothesis is **not permission to call Jev**. The current DeepSeek OCR 2-only restriction remains in force until the operator and PRIME separately authorize a model experiment with exact scope and caps.
+
 ## Proposed execution and comparison
 
 1. **Owner recovery decision.** PRIME pins the current RulesIngestion ref and reviews the three existing private OCR repros before assigning an owner correction. Any new owner artifact is immutable, with source PDF/page, recipe, output, gate, model-call, and local-runtime receipt pins. A deterministic correction has a zero-provider budget; a new OCR2 inference requires a separate finite lease. Failed gates and original bad text remain inspectable.
