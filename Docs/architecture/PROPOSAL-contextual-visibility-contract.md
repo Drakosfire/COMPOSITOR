@@ -8,14 +8,14 @@ Review checkpoint: ARCHITECTURE confirmed the pure WorldKeeper evaluator is a pr
 
 ## Problem and public counterexample
 
-COMPOSITOR currently stores `audience: GM | PLAYER` per resource. `query(content, term, audience=...)` has no viewer, character, scene, or World revision input. In the public synthetic example, a bell description is suitable for a player **if that character can hear it**. A local smoke over project-authored data observed one player hit for the `PLAYER` label and zero for the `GM` label. Because hearing cannot be supplied to this API, each static result applies in both contexts:
+COMPOSITOR currently stores `audience: GM | PLAYER` per resource. `query(content, term, audience=...)` has no viewer, character, scene, or World revision input. In the public synthetic example, the source author wants a bell description to be player-facing **if that character can hear it**. A local smoke over project-authored data observed one player hit for the `PLAYER` label and zero for the `GM` label. Because hearing cannot be supplied to this API, each static result applies in both contexts:
 
-| Resource label | Hearing available: expected / observed | Hearing unavailable: expected / observed |
+| Resource label | Hearing available: contract-allowed / observed | Hearing unavailable: contract-allowed / observed |
 | --- | --- | --- |
 | `PLAYER` | 1 / 1 | 0 / 1 — premature disclosure |
-| `GM` | 1 / 0 — unavailable when allowed | 0 / 0 |
+| `GM` | 0 / 0 — hard ceiling applies | 0 / 0 |
 
-The current API therefore proves only a static audience ceiling; it cannot decide conditional release.
+The `GM` row does not authorize a reveal when hearing is true. To realize the source author's conditional player presentation, a reviewer must separately change the audience ceiling to `PLAYER` and retain the hearing condition. The current API proves only static audience filtering and cannot decide that condition.
 
 This is a contract problem for eventual Playing retrieval, not a request to infer live game state during ingestion. It does not weaken the existing rule that GM-only content is never returned to a player.
 
@@ -53,7 +53,7 @@ This split is **not yet an accepted owner contract**. WorldKeeper's current boun
 | Same cue, hearing fact false | Withhold before any text or excerpt reaches the player path. |
 | Same cue, fact absent, stale, ambiguous, or from a different World revision | `unknown`; withhold. Never substitute a nearby fact or latest head. |
 | Same cue, exact graph head but partial, timed-out, contradictory, or coverage-unknown fact read | `unknown`; withhold. An empty result is not false without a closed-world predicate contract. |
-| Same cue mislabeled `GM`, hearing fact true | Withhold; conditions cannot widen the hard audience ceiling. |
+| Source author intends conditional player cue, but saved resource is `GM` and hearing fact true | Withhold; conditions cannot widen the hard ceiling. A separate reviewed reclassification to `PLAYER` plus the condition is required before any player release. |
 | Presentation type implies player delivery but hard audience is `GM` | Withhold and surface an internal mismatch for review. |
 | Player supplies another character's ID with a favorable hearing fact | `unknown`; withhold unless Buddy's authoritative actor-to-character binding covers that character in the selected World. |
 | Source prerequisite unmapped to a World fact | `unknown`; preserve the source statement for GM review. |
