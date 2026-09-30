@@ -27,7 +27,7 @@ class ReviewedSourceDecisionsTest(unittest.TestCase):
             root = Path(temp)
             pdf = root / "source.pdf"
             lines = [
-                "The fox introduces itself as Mira Hollow, a mage in need of aid.",
+                "The enchanted silver fox introduces itself as Mira Hollow, a mage in need of aid.",
                 "If the ritual fails, Mira dies permanently.",
                 "If they fail by five or less, the spell transforms the target into stone.",
                 "Each time a charge is used the user must pass a check.",
@@ -91,7 +91,7 @@ class ReviewedSourceDecisionsTest(unittest.TestCase):
                         if r["kind"] == "character_identity"]
             self.assertEqual(len(identity), 1)
             self.assertEqual(identity[0]["name"], "Mira Hollow")
-            self.assertEqual(identity[0]["form_state"]["current_form"], "fox")
+            self.assertEqual(identity[0]["form_state"]["current_form"], "enchanted silver fox")
             self.assertEqual({r["kind"] for r in treated["relationships"]},
                              {"evidence_for_identity", "source_outcome_tension",
                               "source_charge_timing_ambiguity"})
@@ -129,9 +129,15 @@ class ReviewedSourceDecisionsTest(unittest.TestCase):
                     output_store=output_store, package_id="changed")
             fabricated = deepcopy(base)
             fabricated["resources"]["line-0"]["text"] = (
-                "The badger introduces itself as Violet Meadow, a mage in need of aid.")
-            with self.assertRaisesRegex(CompositionError, "substantial exact PDF quote"):
+                "The enchanted silver fox introduces itself as Violet Meadow, a mage in need of aid.")
+            with self.assertRaisesRegex(CompositionError, "assertion absent from exact PDF quote"):
                 discover_source_decisions(package=fabricated, pdf_path=pdf,
+                                          expected_pdf_sha256=pdf_sha)
+            fabricated_tension = deepcopy(base)
+            fabricated_tension["resources"]["line-2"]["text"] = (
+                "If they fail by five or less, the spell transmutes the target into stone.")
+            with self.assertRaisesRegex(CompositionError, "substantial exact PDF quote"):
+                discover_source_decisions(package=fabricated_tension, pdf_path=pdf,
                                           expected_pdf_sha256=pdf_sha)
             duplicate = deepcopy(decisions)
             duplicate["reviews"][1]["candidate_id"] = duplicate["reviews"][0]["candidate_id"]

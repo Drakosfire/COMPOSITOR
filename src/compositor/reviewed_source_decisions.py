@@ -57,18 +57,28 @@ def _clause(text: str, match: re.Match[str]) -> str:
     return _normal(text[start:end])
 
 
-def _source_quote(page_text: str, excerpt: str) -> str:
-    """Return an exact span of whitespace-normalized PDF text near the cue."""
+def _source_quote(page_text: str, excerpt: str, *, required_terms: tuple[str, ...],
+                  full_excerpt: bool = False) -> str:
+    """Return a PDF span that contains every term needed for the proposed claim."""
     source = _normal(page_text)
-    match = SequenceMatcher(None, source, _normal(excerpt), autojunk=False).find_longest_match()
-    start, end = match.a, match.a + match.size
-    while start > 0 and source[start - 1].isalnum():
-        start -= 1
-    while end < len(source) and source[end].isalnum():
-        end += 1
-    quote = source[start:end].strip()
-    if (len(quote) < 35 or match.size < 0.45 * len(_normal(excerpt))
-            or not re.search(r"[A-Za-z]", quote)):
+    normalized_excerpt = _normal(excerpt)
+    if full_excerpt:
+        start = source.find(normalized_excerpt)
+        if start < 0:
+            raise CompositionError("candidate assertion absent from exact PDF quote")
+        quote = source[start:start + len(normalized_excerpt)]
+    else:
+        match = SequenceMatcher(None, source, normalized_excerpt, autojunk=False).find_longest_match()
+        start, end = match.a, match.a + match.size
+        while start > 0 and source[start - 1].isalnum():
+            start -= 1
+        while end < len(source) and source[end].isalnum():
+            end += 1
+        quote = source[start:end].strip()
+        if match.size < 0.45 * len(normalized_excerpt):
+            raise CompositionError("candidate lacks a substantial exact PDF quote")
+    if (len(quote) < 35 or not re.search(r"[A-Za-z]", quote)
+            or any(_normal(term).casefold() not in quote.casefold() for term in required_terms)):
         raise CompositionError("candidate lacks a substantial exact PDF quote")
     return quote
 
@@ -107,11 +117,13 @@ def discover_source_decisions(*, package: dict[str, Any], pdf_path: Path,
     candidates: list[dict[str, Any]] = []
 
     def emit(kind: str, page: int, resources: list[dict[str, Any]],
-             excerpts: list[str], proposed: dict[str, Any]) -> None:
+             excerpts: list[str], proposed: dict[str, Any],
+             required_terms: list[tuple[str, ...]], *, full_excerpt: bool = False) -> None:
         evidence = []
-        for resource, excerpt in zip(resources, excerpts, strict=True):
+        for resource, excerpt, terms in zip(resources, excerpts, required_terms, strict=True):
             evidence.append({"resource_id": resource["id"], "source_quote":
-                             _source_quote(page_texts[page - 1], excerpt),
+                             _source_quote(page_texts[page - 1], excerpt,
+                                           required_terms=terms, full_excerpt=full_excerpt),
                              "evidence_excerpt": excerpt})
         body = {"kind": kind, "physical_page_1_based": page,
                 "resource_ids": [resource["id"] for resource in resources],
@@ -124,7 +136,8 @@ def discover_source_decisions(*, package: dict[str, Any], pdf_path: Path,
             for match in IDENTITY.finditer(resource["text"]):
                 emit("identity_form", page, [resource], [_normal(match.group(0))],
                      {"name": match.group("name"), "form": match.group("form").strip(),
-                      "role": match.group("role")})
+                      "role": match.group("role")},
+                     [(match.group("name"), match.group("form"))], full_excerpt=True)
         fatal = [resource for resource in resources if FAILURE.search(resource["text"])
                  and FATAL.search(resource["text"])]
         transformed = [resource for resource in resources if FAILURE.search(resource["text"])
@@ -136,7 +149,9 @@ def discover_source_decisions(*, package: dict[str, Any], pdf_path: Path,
                 emit("outcome_tension", page, [left, right],
                      [_clause(left["text"], FATAL.search(left["text"])),
                       _clause(right["text"], TRANSFORM.search(right["text"]))],
-                     {"status": "potential_tension_not_equivalence"})
+                     {"status": "potential_tension_not_equivalence"},
+                     [(FAILURE.search(left["text"]).group(0), FATAL.search(left["text"]).group(0)),
+                      (FAILURE.search(right["text"]).group(0), TRANSFORM.search(right["text"]).group(0))])
         used = [resource for resource in resources if CHARGE_USED.search(resource["text"])]
         remaining = [resource for resource in resources if CHARGE_REMAINING.search(resource["text"])]
         for left in used:
@@ -146,7 +161,9 @@ def discover_source_decisions(*, package: dict[str, Any], pdf_path: Path,
                 emit("charge_timing", page, [left, right],
                      [_clause(left["text"], CHARGE_USED.search(left["text"])),
                       _clause(right["text"], CHARGE_REMAINING.search(right["text"]))],
-                     {"status": "timing_unresolved"})
+                     {"status": "timing_unresolved"},
+                     [(CHARGE_USED.search(left["text"]).group(0),),
+                      (CHARGE_REMAINING.search(right["text"]).group(0),)])
     candidates.sort(key=lambda item: (item["physical_page_1_based"], item["kind"], item["id"]))
     if len({candidate["id"] for candidate in candidates}) != len(candidates):
         raise CompositionError("duplicate source decision candidate")
