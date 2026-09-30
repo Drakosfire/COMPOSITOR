@@ -206,7 +206,7 @@ def readiness(issues: list[dict[str, Any]]) -> dict[str, str]:
     """Conservative first-pass statuses; task-specific assessment comes later."""
     kinds = {item["kind"] for item in issues}
     return {
-        "worldbuilding": "limited" if kinds & {"missing_base", "unresolved_rule"} else "usable",
+        "worldbuilding": "limited" if kinds & {"missing_base", "unresolved_rule", "unresolved_relationship"} else "usable",
         "planning": "limited" if kinds else "usable",
         "playing": "limited" if kinds else "usable",
     }
@@ -261,6 +261,11 @@ def effective_content(store: JsonPackageStore, ref: dict[str, str], *,
                 issues.append({"kind": "unresolved_rule", "source_id": source_id,
                                "binding": deepcopy(binding), "reason": result["reason"]})
     for relation in package["relationships"]:
+        missing_endpoints = [endpoint for endpoint in ("source_id", "target_id")
+                             if relation[endpoint] not in resources]
+        if missing_endpoints:
+            issues.append({"kind": "unresolved_relationship", "relationship_id": relation["id"],
+                           "missing_endpoints": missing_endpoints})
         if relation["kind"] != "uses_rule" or relation["source_id"] not in resources:
             continue
         binding = {"resource_id": relation["target_id"]}

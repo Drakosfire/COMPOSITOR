@@ -167,6 +167,27 @@ class PackageCycleTest(unittest.TestCase):
         self.assertIn("pending_impact", {issue["kind"] for issue in content["issues"]})
         self.assertEqual(content["resources"]["watcher"], watcher)
 
+    def test_dangling_relationship_survives_source_and_derived_reload_as_issue(self) -> None:
+        relationship = {"id": "points", "source_id": "hook", "target_id": "missing",
+                        "kind": "introduces"}
+        broken = make_source_package(
+            self.store, package_id="dangling", title="Dangling",
+            resources={"hook": FIXTURE["source_resources"]["hook"]},
+            relationships=[relationship],
+        )
+        source_content = effective_content(self.store, ref(broken))
+        issue = {"kind": "unresolved_relationship", "relationship_id": "points",
+                 "missing_endpoints": ["target_id"]}
+        self.assertEqual(source_content["issues"], [issue])
+        self.assertEqual(source_content["readiness"]["worldbuilding"], "limited")
+        self.assertEqual(len(query(source_content, "invites", audience="PLAYER")), 1)
+
+        draft = derive(self.store, ref(broken), package_id="dangling-adapted", title="Adapted")
+        saved = save_derived(self.store, draft, form="delta")
+        reloaded = effective_content(self.store, ref(saved))
+        self.assertEqual(reloaded["issues"], [issue])
+        self.assertEqual(reloaded["resources"]["hook"], FIXTURE["source_resources"]["hook"])
+
     def test_integrity_and_identity_fail_closed(self) -> None:
         path = self.store.path_for(**ref(self.source))
         corrupt = deepcopy(self.source)
