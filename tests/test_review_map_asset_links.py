@@ -100,6 +100,10 @@ class ReviewMapAssetLinksTest(unittest.TestCase):
                                                 treated=treated)
             self.assertIsNone(packet["cases"][0]["review"])
             self.assertEqual(packet["cases"][0]["candidate_map_relationships"], [relation])
+            unsigned = {**packet, "cases": [{key: value for key, value in case.items()
+                                            if key != "review"} for case in packet["cases"]]}
+            unsigned.pop("context_sha256", None)
+            self.assertEqual(packet["context_sha256"], digest(unsigned))
             reviewed = deepcopy(packet)
             reviewed["cases"][0]["review"] = {"verdict": "pass",
                 "reviewer": "fixture reviewer", "rationale": "PDF and image checked.",

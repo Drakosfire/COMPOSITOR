@@ -188,4 +188,8 @@ def build_map_treatment_packet(*, expected: dict[str, Any], baseline: dict[str, 
             for relation in treated["relationships"]
             if relation.get("kind") == "reviewed_map_depicts_place_claim"
             and relation.get("physical_page_1_based") == page]
+    unsigned = {**packet, "cases": [{key: value for key, value in case.items()
+                                    if key != "review"} for case in packet["cases"]]}
+    unsigned.pop("context_sha256", None)
+    packet["context_sha256"] = _hash(unsigned)
     return packet
