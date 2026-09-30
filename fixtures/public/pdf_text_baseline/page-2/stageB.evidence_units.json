@@ -1,0 +1,67 @@
+{
+  "gate_diagnostics": [
+    {
+      "detail": {
+        "note": "single-unit page exempted",
+        "orphan_count": 0,
+        "total_units": 1
+      },
+      "gate_name": "orphan",
+      "passed": true
+    },
+    {
+      "detail": {
+        "overlap_count": 0,
+        "overlaps": [],
+        "total_units": 1
+      },
+      "gate_name": "bleed",
+      "passed": true
+    },
+    {
+      "detail": {
+        "issue_count": 0,
+        "issues": [],
+        "table_unit_count": 0
+      },
+      "gate_name": "table_integrity",
+      "passed": true
+    },
+    {
+      "detail": {
+        "max_chars": 5000,
+        "max_table_chars": 12000,
+        "min_chars": 20,
+        "oversized": [],
+        "oversized_count": 0,
+        "total_units": 1,
+        "undersized": [],
+        "undersized_count": 0,
+        "undersized_fail_ratio": 1.0,
+        "undersized_ratio": 0.0
+      },
+      "gate_name": "unit_size",
+      "passed": true
+    }
+  ],
+  "gates_passed": true,
+  "salvage_score": 1.0,
+  "unit_count": 1,
+  "units": [
+    {
+      "anomaly_flags": [],
+      "content_hash": "26d76d88954282cb2779cb8db6c21f88af196a050347e29a5562d3eaab32664d",
+      "content_version": "public-pdf-text-baseline-v1",
+      "ordering_key": 0,
+      "page_fingerprint": "18d4dd2933e0575ea74a948473d7b0639f66c327efda6d587305d44c9ddf416e",
+      "source_line_end": 2,
+      "source_line_start": 0,
+      "structural_path": [
+        "East Path"
+      ],
+      "text": "East Path — A stone marker points toward the meadow.",
+      "unit_id": "e28340ed30ae2a1d60cc0dfa564b60ed9e41ede5d58209ee8c2ed472907659ca",
+      "unit_type": "prose"
+    }
+  ]
+}

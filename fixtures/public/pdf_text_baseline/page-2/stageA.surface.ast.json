@@ -1,0 +1,31 @@
+{
+  "content_hash": "87db13367f69ef0678a798d37b546a82d62e9896cedc2d3aa7cc73f8af38b279",
+  "node_count": 3,
+  "page_fingerprint": "18d4dd2933e0575ea74a948473d7b0639f66c327efda6d587305d44c9ddf416e",
+  "root": {
+    "children": [
+      {
+        "children": [
+          {
+            "level": 0,
+            "node_type": "paragraph",
+            "source_line_end": 2,
+            "source_line_start": 1,
+            "text": "A stone marker points toward the meadow."
+          }
+        ],
+        "level": 2,
+        "node_type": "heading",
+        "source_line_end": 1,
+        "source_line_start": 0,
+        "text": "East Path"
+      }
+    ],
+    "level": 0,
+    "node_type": "root",
+    "source_line_end": 2,
+    "source_line_start": 0,
+    "text": ""
+  },
+  "table_count": 0
+}

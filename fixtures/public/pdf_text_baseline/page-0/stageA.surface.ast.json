@@ -1,0 +1,31 @@
+{
+  "content_hash": "312232c9405c5c2c290f10b4eba46c6b4a05e949d939bcbd39e53726e6042bbb",
+  "node_count": 3,
+  "page_fingerprint": "23765814d2820cba7f0576bfd9387ef17f1961efec300eeb60e51716f36e0000",
+  "root": {
+    "children": [
+      {
+        "children": [
+          {
+            "level": 0,
+            "node_type": "paragraph",
+            "source_line_end": 2,
+            "source_line_start": 1,
+            "text": "A traveler finds a copper bell beside the mill."
+          }
+        ],
+        "level": 2,
+        "node_type": "heading",
+        "source_line_end": 1,
+        "source_line_start": 0,
+        "text": "North Mill"
+      }
+    ],
+    "level": 0,
+    "node_type": "root",
+    "source_line_end": 2,
+    "source_line_start": 0,
+    "text": ""
+  },
+  "table_count": 0
+}
