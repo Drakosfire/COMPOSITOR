@@ -60,6 +60,10 @@ def _resources(value: Any) -> dict[str, dict[str, Any]]:
         refs = resource.get("rule_refs", [])
         if not isinstance(refs, list):
             raise CompositionError("rule_refs must be a list")
+        coverage = resource.get("review_coverage", [])
+        if not isinstance(coverage, list) or any(
+                item not in {"worldbuilding", "planning", "playing"} for item in coverage):
+            raise CompositionError("review_coverage must list known workflows")
         for rule in refs:
             if not isinstance(rule, dict) or not rule.get("resource_id"):
                 raise CompositionError("invalid rule binding")
@@ -82,6 +86,12 @@ def _dependencies(value: Any) -> list[dict[str, Any]]:
             _resources(dep.get("resources"))
             if not isinstance(dep.get("permission_basis"), str) or not dep["permission_basis"]:
                 raise CompositionError("bundled content needs a recorded permission basis")
+            if not isinstance(dep.get("review_issues", []), list) or any(
+                    not isinstance(issue, dict) or not issue.get("kind")
+                    for issue in dep.get("review_issues", [])):
+                raise CompositionError("bundled review issues must be a list")
+            if "review_scope_complete" in dep and dep["review_scope_complete"] is not True:
+                raise CompositionError("invalid bundled review scope marker")
         elif dep.get("mode") == "linked":
             if "resources" in dep:
                 raise CompositionError("linked dependency cannot carry resources")
@@ -445,6 +455,25 @@ def select_dependency(store: JsonPackageStore, draft: WorkingDraft,
             raise CompositionError(f"selected resources missing: {missing}")
         dep["resources"] = {rid: deepcopy(source["resources"][rid]) for rid in sorted(set(selected))}
         dep["permission_basis"] = permission_basis
+        relevant = []
+        for issue in source["issues"]:
+            affected = set(issue.get("resource_ids", []))
+            affected.update([issue[key] for key in ("resource_id", "source_id") if issue.get(key)])
+            relation = next((r for r in source["relationships"]
+                             if r["id"] == issue.get("relationship_id")), None)
+            if relation:
+                affected.update((relation["source_id"], relation["target_id"]))
+            proposal = next((p for p in source["proposals"]
+                             if p["id"] == issue.get("proposal_id")), None)
+            if proposal:
+                affected.add(proposal["target_id"])
+            if (affected & set(selected) or issue.get("kind") == "missing_base"
+                    or not affected and not issue.get("ref")):
+                copied = deepcopy(issue)
+                copied["resource_ids"] = sorted(affected)
+                relevant.append(copied)
+        dep["review_issues"] = relevant
+        dep["review_scope_complete"] = True
     draft.dependencies = [d for d in draft.dependencies
                           if (d["package_id"], d["revision"]) != (exact["package_id"], exact["revision"])]
     draft.dependencies.append(dep)
@@ -509,3 +538,148 @@ def resolve_rule(store: JsonPackageStore, content: dict[str, Any],
                                         or resource.get("ruleset") != expected_ruleset):
         return {"state": "unresolved", "reason": "ruleset or edition mismatch", "binding": deepcopy(binding)}
     return {"state": "resolved", "resource": deepcopy(resource), "source": source}
+
+
+def assess_rule_use(store: JsonPackageStore, content: dict[str, Any],
+                    binding: dict[str, Any], *, audience: Literal["GM", "PLAYER"],
+                    workflow: Literal["worldbuilding", "planning", "playing"],
+                    source_id: str) -> dict[str, Any]:
+    """Assess one exact rule use; identity resolution alone does not imply readiness.
+
+    ``review_coverage`` is an explicit per-resource list of evaluated workflows.
+    It attests package review coverage, not source fidelity or general safety.
+    """
+    if workflow not in {"worldbuilding", "planning", "playing"}:
+        raise CompositionError("invalid workflow")
+    if audience not in {"GM", "PLAYER"}:
+        raise CompositionError("audience must be GM or PLAYER")
+
+    evidence: list[dict[str, Any]] = []
+    active: set[tuple[str, str, str]] = set()
+
+    def note(status: str, reason: str, path: list[dict[str, Any]],
+             issue: dict[str, Any] | None = None) -> None:
+        item: dict[str, Any] = {"status": status, "reason": reason,
+                                "path": deepcopy(path)}
+        if issue is not None:
+            item["issue_id"] = _hash(issue)
+            item["issue"] = deepcopy(issue)
+        evidence.append(item)
+
+    def relevant_issues(current: dict[str, Any], rid: str,
+                        path: list[dict[str, Any]],
+                        cited_binding: dict[str, Any] | None = None) -> None:
+        relations = {r["id"]: r for r in current.get("relationships", [])}
+        proposals = {p["id"]: p for p in current.get("proposals", [])}
+        for issue in current.get("issues", []):
+            kind = issue.get("kind")
+            if kind == "missing_dependency":
+                continue  # A bound missing dependency is handled by resolution.
+            if kind == "missing_base":
+                note("unknown", "base impact not established", path, issue)
+                continue
+            if (kind == "unresolved_rule" and cited_binding is not None
+                    and issue.get("source_id") == rid
+                    and issue.get("binding") != cited_binding):
+                continue
+            scoped = issue.get("resource_id") == rid or rid in issue.get("resource_ids", [])
+            scoped = scoped or issue.get("source_id") == rid
+            relation = relations.get(issue.get("relationship_id"))
+            scoped = scoped or bool(relation and rid in
+                                    {relation["source_id"], relation["target_id"]})
+            proposal = proposals.get(issue.get("proposal_id"))
+            scoped = scoped or bool(proposal and proposal["target_id"] == rid)
+            if scoped or issue.get("scope") == "global":
+                note("limited", f"applicable {kind}", path, issue)
+            elif not any(key in issue for key in
+                         ("resource_id", "resource_ids", "source_id",
+                          "relationship_id", "proposal_id", "ref")):
+                note("unknown", f"unscoped {kind}", path, issue)
+
+    def walk(current: dict[str, Any], rule: dict[str, Any],
+             path: list[dict[str, Any]]) -> None:
+        external = "package_id" in rule or "revision" in rule
+        exact = _ref(rule) if external else {
+            "package_id": current["package_id"], "revision": current["revision"]}
+        rid = _id(rule.get("resource_id"), "rule resource id")
+        dep = next((d for d in current.get("dependencies", [])
+                    if external and _ref(d) == exact), None)
+        mode = dep["mode"] if dep else ("linked" if external else "local")
+        step = {**exact, "resource_id": rid, "mode": mode,
+                "workflow": workflow}
+        chain = [*path, step]
+        key = (exact["package_id"], exact["revision"], rid)
+        if key in active:
+            note("unknown", "cyclic rule use", chain)
+            return
+        active.add(key)
+        try:
+            try:
+                resolved = resolve_rule(store, current, rule, audience=audience)
+            except CompositionError as exc:
+                if "cyclic package ancestry" not in str(exc):
+                    raise
+                note("unknown", "cyclic package ancestry", chain)
+                return
+            if resolved["state"] != "resolved":
+                note("unavailable", resolved["reason"], chain)
+                return
+            resource = resolved["resource"]
+            if dep and dep["mode"] == "linked":
+                try:
+                    target = effective_content(store, exact)
+                except CompositionError as exc:
+                    if "cyclic package ancestry" not in str(exc):
+                        raise
+                    note("unknown", "cyclic package ancestry", chain)
+                    return
+            elif dep and dep["mode"] == "bundled":
+                target = {**exact, "resources": dep["resources"],
+                          "dependencies": [], "issues": dep.get("review_issues", []), "relationships": [],
+                          "proposals": []}
+            else:
+                target = current
+            origin = resource.get("origin", {})
+            if origin.get("type") not in {"source", "authored"}:
+                note("unknown", "resource provenance not established", chain)
+            if workflow not in resource.get("review_coverage", []):
+                note("unknown", "workflow review coverage not established", chain)
+            if dep and dep["mode"] == "bundled" and not dep.get("review_scope_complete"):
+                note("unknown", "bundled review scope not established", chain)
+            relevant_issues(target, rid, chain)
+            for child in resource.get("rule_refs", []):
+                walk(target, child, chain)
+        finally:
+            active.remove(key)
+
+    source_id = _id(source_id, "citing resource id")
+    citer = content["resources"].get(source_id)
+    if citer is None:
+        return {"resolution": {"state": "unresolved", "reason": "citing resource missing"},
+                "use_readiness": "unavailable", "workflow": workflow,
+                "evidence": [{"status": "unavailable", "reason": "citing resource missing", "path": []}]}
+    if audience == "PLAYER" and citer["audience"] != "PLAYER":
+        return {"resolution": {"state": "unsupported", "reason": "citing resource is not player-visible"},
+                "use_readiness": "unavailable", "workflow": workflow,
+                "evidence": [{"status": "unavailable", "reason": "citing resource is not player-visible", "path": []}]}
+    cited = binding in citer.get("rule_refs", []) or any(
+        r["kind"] == "uses_rule" and r["source_id"] == source_id
+        and "package_id" not in binding and r["target_id"] == binding.get("resource_id")
+        for r in content.get("relationships", []))
+    if not cited:
+        return {"resolution": {"state": "unresolved", "reason": "rule use not declared"},
+                "use_readiness": "unavailable", "workflow": workflow,
+                "evidence": [{"status": "unavailable", "reason": "rule use not declared", "path": []}]}
+    citer_step = {"package_id": content["package_id"], "revision": content["revision"],
+                  "resource_id": source_id, "mode": "local", "workflow": workflow}
+    if workflow not in citer.get("review_coverage", []):
+        note("unknown", "citing resource review coverage not established", [citer_step])
+    relevant_issues(content, source_id, [citer_step], binding)
+    resolution = resolve_rule(store, content, binding, audience=audience)
+    walk(content, binding, [citer_step])
+    statuses = {item["status"] for item in evidence}
+    use_readiness = next((status for status in
+                          ("unavailable", "unknown", "limited") if status in statuses),
+                         "usable")
+    return {"resolution": resolution, "use_readiness": use_readiness,
+            "workflow": workflow, "evidence": evidence}
