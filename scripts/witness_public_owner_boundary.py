@@ -37,10 +37,20 @@ def _pinned_root(path: str, expected: str, label: str) -> Path:
     actual = result.stdout.strip()
     if actual != expected:
         raise RuntimeError(f"{label} revision mismatch: expected {expected}, found {actual}")
+    status = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=all", "--", "src"],
+        cwd=root, text=True, capture_output=True, check=False,
+    )
+    if status.returncode != 0:
+        raise RuntimeError(f"{label} source cleanliness check failed: {status.stderr.strip()}")
+    if status.stdout.strip():
+        raise RuntimeError(f"{label} source checkout has tracked or untracked src/ changes")
     return root
 
 
 def witness(mind_root: Path, keeper_root: Path) -> dict[str, object]:
+    if not __debug__:
+        raise RuntimeError("optimized Python disables witness assertions")
     sys.path[:0] = [str(ROOT / "src"), str(mind_root / "src"), str(keeper_root / "src")]
     from compositor import JsonPackageStore, load_evidence_draft
     from compositor.owner_input_proposal import propose_owner_inputs
