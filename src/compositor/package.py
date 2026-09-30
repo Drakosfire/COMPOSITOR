@@ -470,7 +470,8 @@ def select_dependency(store: JsonPackageStore, draft: WorkingDraft,
             if (affected & set(selected) or issue.get("kind") == "missing_base"
                     or not affected and not issue.get("ref")):
                 copied = deepcopy(issue)
-                copied["resource_ids"] = sorted(affected)
+                if affected:
+                    copied["resource_ids"] = sorted(affected)
                 relevant.append(copied)
         dep["review_issues"] = relevant
         dep["review_scope_complete"] = True
@@ -582,18 +583,23 @@ def assess_rule_use(store: JsonPackageStore, content: dict[str, Any],
                     and issue.get("source_id") == rid
                     and issue.get("binding") != cited_binding):
                 continue
-            scoped = issue.get("resource_id") == rid or rid in issue.get("resource_ids", [])
+            scoped_ids = issue.get("resource_ids")
+            scoped = issue.get("resource_id") == rid or (
+                isinstance(scoped_ids, list) and rid in scoped_ids)
             scoped = scoped or issue.get("source_id") == rid
             relation = relations.get(issue.get("relationship_id"))
             scoped = scoped or bool(relation and rid in
                                     {relation["source_id"], relation["target_id"]})
             proposal = proposals.get(issue.get("proposal_id"))
             scoped = scoped or bool(proposal and proposal["target_id"] == rid)
+            known_scope = (issue.get("resource_id") in current.get("resources", {})
+                           or issue.get("source_id") in current.get("resources", {})
+                           or bool(isinstance(scoped_ids, list) and scoped_ids
+                                   and all(item in current.get("resources", {}) for item in scoped_ids))
+                           or bool(relation) or bool(proposal))
             if scoped or issue.get("scope") == "global":
                 note("limited", f"applicable {kind}", path, issue)
-            elif not any(key in issue for key in
-                         ("resource_id", "resource_ids", "source_id",
-                          "relationship_id", "proposal_id", "ref")):
+            elif not known_scope:
                 note("unknown", f"unscoped {kind}", path, issue)
 
     def walk(current: dict[str, Any], rule: dict[str, Any],

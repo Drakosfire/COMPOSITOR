@@ -299,8 +299,8 @@ class PackageCycleTest(unittest.TestCase):
         self.assertEqual(assess()["use_readiness"], "usable")
         unrelated = make_source_package(
             self.store, package_id="unrelated-rules", title="Unrelated diagnostic",
-            resources={"calm": calm},
-            diagnostics=[{"kind": "interpretation_pending", "resource_id": "not-calm"}],
+            resources={"calm": calm, "other": {**deepcopy(calm), "id": "other"}},
+            diagnostics=[{"kind": "interpretation_pending", "resource_id": "other"}],
         )
         unrelated_binding = {**ref(unrelated), "resource_id": "calm", "ruleset": "windmill-v1"}
         watcher["rule_refs"] = [unrelated_binding]
@@ -387,6 +387,44 @@ class PackageCycleTest(unittest.TestCase):
                                    workflow="playing")
         self.assertEqual(assessed["use_readiness"], "unknown")
         self.assertTrue(any(e["reason"] == "cyclic rule use" for e in assessed["evidence"]))
+
+    def test_unscoped_issue_stays_unknown_when_bundled_and_reloaded(self) -> None:
+        calm = deepcopy(FIXTURE["external_rule"])
+        calm["review_coverage"] = ["playing"]
+        rules = make_source_package(
+            self.store, package_id="unscoped-copy-rules", title="Unscoped copy rules",
+            resources={"calm": calm}, diagnostics=[{"kind": "interpretation_pending"}],
+        )
+        binding = {**ref(rules), "resource_id": "calm", "ruleset": "windmill-v1"}
+        watcher = deepcopy(FIXTURE["source_resources"]["watcher"])
+        watcher["rule_refs"] = [binding]
+        watcher["review_coverage"] = ["playing"]
+        saved_refs = []
+        for mode in ("linked", "bundled"):
+            draft = derive(self.store, ref(self.source), package_id=f"copy-{mode}",
+                           title=f"Copy {mode}")
+            edit_resource(draft, watcher)
+            select_dependency(self.store, draft, ref(rules), mode=mode,
+                              resource_ids=["calm"] if mode == "bundled" else None,
+                              permission_basis="project-authored fixture" if mode == "bundled" else None)
+            for form in ("delta", "snapshot"):
+                saved = save_derived(self.store, draft, form=form)
+                saved_refs.append((mode, ref(saved)))
+                content = effective_content(self.store, ref(saved))
+                assessed = assess_rule_use(self.store, content, binding, source_id="watcher",
+                                           audience="GM", workflow="playing")
+                self.assertEqual(assessed["use_readiness"], "unknown")
+                self.assertTrue(any(e["reason"] == "unscoped interpretation_pending"
+                                    for e in assessed["evidence"]))
+                if mode == "bundled":
+                    self.assertNotIn("resource_ids", content["dependencies"][0]["review_issues"][0])
+        self.store.path_for(**ref(rules)).unlink()
+        for mode, saved_ref in saved_refs:
+            content = effective_content(self.store, saved_ref)
+            assessed = assess_rule_use(self.store, content, binding, source_id="watcher",
+                                       audience="GM", workflow="playing")
+            self.assertEqual(assessed["use_readiness"],
+                             "unknown" if mode == "bundled" else "unavailable")
 
 
 if __name__ == "__main__":
