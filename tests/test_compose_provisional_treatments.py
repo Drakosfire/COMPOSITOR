@@ -102,46 +102,68 @@ class ComposeProvisionalTreatmentsTest(unittest.TestCase):
             self.assertEqual(validate_review_packet(reviewed, expected=packet,
                                                     require_complete=True)["reviewed"], 1)
 
+            tampered_review = deepcopy(first)
+            tampered_review["reviewed_source_decisions"][0]["choice"] = "unresolved"
+            with self.assertRaisesRegex(CompositionError, "revision integrity mismatch"):
+                compose_provisional_treatments(base=base,
+                    treatments=[tampered_review, second], output_store=store,
+                    package_id="tampered-review")
+            tampered_combined = deepcopy(combined)
+            tampered_combined["resources"]["identity"]["text"] = "Altered without revision"
+            with self.assertRaisesRegex(CompositionError, "revision integrity mismatch"):
+                build_combined_review_packet(expected=expected, baseline=base,
+                                             combined=tampered_combined)
+            tampered_base = deepcopy(base)
+            tampered_base["resources"]["a"]["text"] = "Altered baseline"
+            with self.assertRaisesRegex(CompositionError, "revision integrity mismatch"):
+                build_combined_review_packet(expected=expected, baseline=tampered_base,
+                                             combined=combined)
+
+            def repin(value: dict) -> dict:
+                updated = deepcopy(value)
+                updated.pop("revision")
+                return store.save(updated)
+
             modified = deepcopy(first)
             modified["resources"]["a"]["text"] = "Rewritten source"
             with self.assertRaisesRegex(CompositionError, "changed or removed a base resource"):
-                compose_provisional_treatments(base=base, treatments=[modified, second],
+                compose_provisional_treatments(base=base, treatments=[repin(modified), second],
                     output_store=store, package_id="modified")
             changed_relation = deepcopy(second)
             changed_relation["relationships"][0]["kind"] = "changed"
             with self.assertRaisesRegex(CompositionError, "changed or removed a base relationship"):
                 compose_provisional_treatments(base=base,
-                    treatments=[first, changed_relation], output_store=store,
+                    treatments=[first, repin(changed_relation)], output_store=store,
                     package_id="changed-relation")
             overlapping = deepcopy(second)
             overlapping["diagnostics"][0]["resource_id"] = "a"
             with self.assertRaisesRegex(CompositionError, "collide or overlap"):
-                compose_provisional_treatments(base=base, treatments=[first, overlapping],
+                compose_provisional_treatments(base=base, treatments=[first, repin(overlapping)],
                     output_store=store, package_id="overlap")
             linked_overlap = deepcopy(second)
             linked_overlap["diagnostics"][0]["relationship_id"] = "base-link"
             with self.assertRaisesRegex(CompositionError, "collide or overlap"):
-                compose_provisional_treatments(base=base, treatments=[first, linked_overlap],
+                compose_provisional_treatments(base=base, treatments=[first, repin(linked_overlap)],
                     output_store=store, package_id="linked-overlap")
             foreign_relation = deepcopy(second)
             foreign_relation["diagnostics"][0]["relationship_id"] = "identity-link"
             with self.assertRaisesRegex(CompositionError, "unavailable relationship"):
-                compose_provisional_treatments(base=base, treatments=[first, foreign_relation],
+                compose_provisional_treatments(base=base, treatments=[first, repin(foreign_relation)],
                     output_store=store, package_id="foreign-relation")
             collided = deepcopy(second)
             collided["resources"]["identity"] = resource("identity")
             with self.assertRaisesRegex(CompositionError, "collide or overlap"):
-                compose_provisional_treatments(base=base, treatments=[first, collided],
+                compose_provisional_treatments(base=base, treatments=[first, repin(collided)],
                     output_store=store, package_id="collision")
             foreign_source = deepcopy(first)
             foreign_source["resources"]["identity"]["origin"]["source_id"] = "sha256:" + "b" * 64
             with self.assertRaisesRegex(CompositionError, "outside pinned source pages"):
-                compose_provisional_treatments(base=base, treatments=[foreign_source, second],
+                compose_provisional_treatments(base=base, treatments=[repin(foreign_source), second],
                     output_store=store, package_id="foreign-source")
             wrong_base = deepcopy(second)
             wrong_base["lineage"] = []
             with self.assertRaisesRegex(CompositionError, "different or ambiguous base"):
-                compose_provisional_treatments(base=base, treatments=[first, wrong_base],
+                compose_provisional_treatments(base=base, treatments=[first, repin(wrong_base)],
                     output_store=store, package_id="wrong-base")
             with self.assertRaisesRegex(CompositionError, "duplicate treatment revision"):
                 compose_provisional_treatments(base=base, treatments=[first, first],

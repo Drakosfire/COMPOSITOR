@@ -31,6 +31,15 @@ def _ref(package: dict[str, Any]) -> dict[str, str]:
     return {key: package[key] for key in ("package_id", "revision")}
 
 
+def _verify_revision(package: dict[str, Any]) -> None:
+    revision = package.get("revision")
+    if (not isinstance(revision, str) or len(revision) != 64
+            or any(char not in "0123456789abcdef" for char in revision)
+            or _hash({key: value for key, value in package.items()
+                      if key != "revision"}) != revision):
+        raise CompositionError("package revision integrity mismatch")
+
+
 def _scope_ids(issue: dict[str, Any]) -> set[str]:
     ids = set()
     if isinstance(issue.get("resource_id"), str):
@@ -131,6 +140,9 @@ def compose_provisional_treatments(*, base: dict[str, Any],
     """Save a new immutable source package only for strictly disjoint deltas."""
     if len(treatments) != 2:
         raise CompositionError("composition requires exactly two treatments")
+    _verify_revision(base)
+    for treatment in treatments:
+        _verify_revision(treatment)
     ordered = sorted(treatments, key=lambda item: (item["package_id"], item["revision"]))
     if len({_hash(_ref(item)) for item in ordered}) != 2:
         raise CompositionError("duplicate treatment revision")
@@ -173,6 +185,8 @@ def build_combined_review_packet(*, expected: dict[str, Any],
                                  baseline: dict[str, Any],
                                  combined: dict[str, Any]) -> dict[str, Any]:
     """Open every frozen source case against the two-parent package, unjudged."""
+    _verify_revision(baseline)
+    _verify_revision(combined)
     base_ref = _ref(baseline)
     if (expected.get("review_package_ref") != base_ref
             or combined.get("composition_base_ref") != base_ref
