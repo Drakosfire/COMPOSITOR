@@ -50,6 +50,8 @@ The [Sheep v2 first-evidence record](Docs/Implementation/RECORD-19-sheep-ocr2-fi
 
 The [Sheep JPEG asset-projection record](Docs/Implementation/RECORD-20-sheep-jpeg-asset-projection.md) pins a separate, private reference-only replay for four recoverable images. Visual meaning and consumer task verdicts remain unjudged.
 
+The [package-based review-packet record](Docs/Implementation/RECORD-21-package-review-packet.md) pins an unjudged Sheep packet from the separate OCR, package, gold, and asset revisions. Source-fidelity and integration cases remain distinct.
+
 ## Open-source status
 
 The project is intended to be public open-source software. A license has not yet been selected for this repository; until one is added, do not assume the code is licensed for reuse. Contributions and redistribution guidance will follow that decision.
