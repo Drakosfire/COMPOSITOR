@@ -1,6 +1,6 @@
 # Composition capability PR stack
 
-Status: **draft roadmap for PRIME review**. The operator requested large coherent PR bites and concise handoffs after accepting the [Composition contract](../Design/CONTRACT-composition.md). This plan is sequencing guidance, not execution authority or a promise that all five PRs will retain these exact boundaries.
+Status: **draft roadmap, PRIME reviewed as a proposed sequence**. The operator requested large coherent PR bites and concise handoffs after accepting the [Composition contract](../Design/CONTRACT-composition.md). This plan is sequencing guidance, not execution authority or a promise that all five PRs will retain these exact boundaries.
 
 ## Working rule
 
@@ -18,7 +18,7 @@ The existing [design PR](https://github.com/Drakosfire/COMPOSITOR/pull/1) is bit
 | 4. Composition in context | Package selection, scope, adaptation, and unload behavior integrated through the relevant owner contracts with Eldyrwild and a blank World. | Load each/both adventures, query selected/active content, adapt into a World through governance, unload without leakage or unintended publication. | [Composition in context](../Handoffs/HANDOFF-04-composition-in-context.md) |
 | 5. Rules interaction | Exact rule bindings resolved consistently for adventure resources, statblocks, and Rules Lawyer consumers. | Bound rule opens with source/version/amendment; missing, stale, and edition-mismatched bindings do not present as verified. | [Rules interaction](../Handoffs/HANDOFF-05-rules-interaction.md) |
 
-Bites are ordered by dependency, not calendar. An owner may need a separate PR in its own repository to satisfy a consumer witness. COMPOSITOR does not copy owner implementations to avoid that boundary.
+Bites are ordered by dependency, not calendar. Before activating bites 4 or 5, name the owner-repository PRs or blocked dependencies, their merge order, and which PR proves each end-to-end consumer witness. A COMPOSITOR-only mock does not satisfy that witness. COMPOSITOR does not copy owner implementations to avoid that boundary.
 
 ## Parallel preparation and gates
 
