@@ -58,4 +58,6 @@ The [proposed Sheep gap-treatment handoff](Docs/Handoffs/HANDOFF-06-sheep-gap-tr
 
 ## Open-source status
 
-The project is intended to be public open-source software. A license has not yet been selected for this repository; until one is added, do not assume the code is licensed for reuse. Contributions and redistribution guidance will follow that decision.
+COMPOSITOR is licensed under the [MIT License](LICENSE). Copyright (c) 2026 Drakosfire. Redistribution of the software must include the copyright and permission notice as stated in the license.
+
+The license applies to this repository's software and associated documentation. Private source PDFs, reviewed gold, source-derived packages, and experimental artifacts are not part of the public repository; their rights and handling remain separate.
