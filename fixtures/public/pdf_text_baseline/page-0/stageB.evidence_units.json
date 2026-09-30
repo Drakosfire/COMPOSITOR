@@ -1,0 +1,67 @@
+{
+  "gate_diagnostics": [
+    {
+      "detail": {
+        "note": "single-unit page exempted",
+        "orphan_count": 0,
+        "total_units": 1
+      },
+      "gate_name": "orphan",
+      "passed": true
+    },
+    {
+      "detail": {
+        "overlap_count": 0,
+        "overlaps": [],
+        "total_units": 1
+      },
+      "gate_name": "bleed",
+      "passed": true
+    },
+    {
+      "detail": {
+        "issue_count": 0,
+        "issues": [],
+        "table_unit_count": 0
+      },
+      "gate_name": "table_integrity",
+      "passed": true
+    },
+    {
+      "detail": {
+        "max_chars": 5000,
+        "max_table_chars": 12000,
+        "min_chars": 20,
+        "oversized": [],
+        "oversized_count": 0,
+        "total_units": 1,
+        "undersized": [],
+        "undersized_count": 0,
+        "undersized_fail_ratio": 1.0,
+        "undersized_ratio": 0.0
+      },
+      "gate_name": "unit_size",
+      "passed": true
+    }
+  ],
+  "gates_passed": true,
+  "salvage_score": 1.0,
+  "unit_count": 1,
+  "units": [
+    {
+      "anomaly_flags": [],
+      "content_hash": "51d267b8b4fc003203bc788f6eb10783e6db68e49c93f51a004957d3aedcfd7b",
+      "content_version": "public-pdf-text-baseline-v1",
+      "ordering_key": 0,
+      "page_fingerprint": "23765814d2820cba7f0576bfd9387ef17f1961efec300eeb60e51716f36e0000",
+      "source_line_end": 2,
+      "source_line_start": 0,
+      "structural_path": [
+        "North Mill"
+      ],
+      "text": "North Mill — A traveler finds a copper bell beside the mill.",
+      "unit_id": "9164a98eacf7bbd225c21994b8854e9a5d548e0409fc959dcd79b3099a935a31",
+      "unit_type": "prose"
+    }
+  ]
+}

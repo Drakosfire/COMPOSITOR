@@ -1,0 +1,33 @@
+[
+  {
+    "detail": {
+      "ast_content_chars": 42,
+      "ratio": 1.0,
+      "raw_content_chars": 42,
+      "threshold": 0.95
+    },
+    "gate_name": "coverage",
+    "passed": true
+  },
+  {
+    "detail": {
+      "inversion_count": 0,
+      "inversions": [],
+      "leaf_count": 1
+    },
+    "gate_name": "ordering",
+    "passed": true
+  },
+  {
+    "detail": {
+      "ast_row_counts": [],
+      "ast_table_count": 0,
+      "count_match": true,
+      "raw_row_counts": [],
+      "raw_table_count": 0,
+      "row_mismatches": []
+    },
+    "gate_name": "table_parse",
+    "passed": true
+  }
+]

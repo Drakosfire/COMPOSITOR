@@ -6,6 +6,7 @@ after that result has been frozen, and says nothing about semantic correctness.
 
 from __future__ import annotations
 
+from collections import Counter
 from hashlib import sha256
 import json
 from pathlib import Path
@@ -57,17 +58,21 @@ def freeze_first_evidence_result(*, store: JsonPackageStore, package_ref: dict[s
     if not isinstance(suite, str) or not suite.strip():
         raise CompositionError("suite required")
     manifest = _json(manifest_path)
-    if manifest.get("route") != "supplied_markdown" or manifest.get("provider_calls") != 0:
-        raise CompositionError("baseline requires zero-provider supplied Markdown evidence")
+    route = manifest.get("route")
+    if route not in {"supplied_markdown", "pdf_text"} or manifest.get("provider_calls") != 0:
+        raise CompositionError("baseline requires zero-provider evidence")
     if manifest.get("rules_ingestion_ref") != rules_ingestion_ref:
         raise CompositionError("adapter revision mismatch")
     source_manifest = _json(source_manifest_path)
     source_files = source_manifest.get("source_files") or {}
-    if (source_files.get("normalized_markdown", {}).get("sha256") !=
-            manifest.get("supplied_markdown_sha256") or
-            source_files.get("printer_friendly_pdf", {}).get("sha256") !=
-            manifest.get("source_pdf_sha256")):
+    if (source_files.get("printer_friendly_pdf", {}).get("sha256") !=
+            manifest.get("source_pdf_sha256") or
+            (route == "supplied_markdown" and
+             source_files.get("normalized_markdown", {}).get("sha256") !=
+             manifest.get("supplied_markdown_sha256"))):
         raise CompositionError("source manifest does not bind evidence inputs")
+    if not isinstance(manifest.get("recovery_method"), str) or not manifest["recovery_method"].strip():
+        raise CompositionError("recovery method required")
     pages = manifest.get("pages")
     if not isinstance(pages, list) or not pages:
         raise CompositionError("baseline needs pinned pages")
@@ -77,6 +82,11 @@ def freeze_first_evidence_result(*, store: JsonPackageStore, package_ref: dict[s
         if not isinstance(index, int) or not isinstance(printed, int) or index in page_map:
             raise CompositionError("invalid page identity in evidence manifest")
         page_map[index] = printed
+    indices = list(page_map)
+    if (indices != sorted(indices) or len(set(page_map.values())) != len(page_map)
+            or list(page_map.values()) != sorted(page_map.values())
+            or manifest.get("expected_page_indices") != indices):
+        raise CompositionError("evidence page order mismatch")
     original = store.load(package_ref)
     replay = load_evidence_draft(
         store, evidence_dir, project_root=project_root,
@@ -88,7 +98,8 @@ def freeze_first_evidence_result(*, store: JsonPackageStore, package_ref: dict[s
         raise CompositionError("evidence replay differs from pinned package")
     if any(issue.get("kind") == "missing_source" for issue in replay.report["diagnostics"]):
         raise CompositionError("pinned source unavailable")
-    direct_sha = manifest.get("supplied_markdown_sha256")
+    direct_sha = (manifest.get("supplied_markdown_sha256") if route == "supplied_markdown"
+                  else manifest.get("source_pdf_sha256"))
     if not isinstance(direct_sha, str) or not HEX64.fullmatch(direct_sha):
         raise CompositionError("invalid direct source digest")
     for resource in original["resources"].values():
@@ -96,17 +107,29 @@ def freeze_first_evidence_result(*, store: JsonPackageStore, package_ref: dict[s
         index = origin.get("page_index")
         if (index not in page_map or origin.get("source_id") != f"sha256:{direct_sha}"
                 or not str(origin.get("locator", "")).startswith(
-                    f"supplied_markdown/page-{index}/stageB.evidence_units.json#/units/")):
+                    f"{route}/page-{index}/stageB.evidence_units.json#/units/")):
             raise CompositionError("resource provenance differs from evidence route")
+    recovery_diagnostics = []
+    for page in pages:
+        surface = Path(evidence_dir) / page["artifact_dir"] / "stageA.surface.md"
+        if not surface.read_text(encoding="utf-8").strip():
+            recovery_diagnostics.append({"kind": "missing_text", "page_index": page["page_index"],
+                                         "printed_page": page["printed_page"]})
+    image_count = manifest.get("embedded_image_entries", 0)
+    if not isinstance(image_count, int) or image_count < 0:
+        raise CompositionError("invalid embedded image count")
+    if image_count:
+        recovery_diagnostics.append({"kind": "image_content_unsupported", "count": image_count})
     first = {
         "format_version": 1, "recipe": RECIPE, "recipe_sha256": _sha(Path(__file__)),
-        "suite": suite,
+        "suite": suite, "route": route, "recovery_method": manifest["recovery_method"],
         "source_manifest_sha256": source_manifest_sha256,
         "evidence_manifest_sha256": evidence_manifest_sha256,
         "direct_source_sha256": direct_sha,
         "rules_ingestion_ref": rules_ingestion_ref,
         "page_map": {str(k): page_map[k] for k in sorted(page_map)},
         "package": original, "adapter_report": replay.report,
+        "recovery_diagnostics": recovery_diagnostics,
         "provider_calls": 0, "provider_spend_usd": 0,
     }
     output = _private_output(Path(output_path), Path(private_root))
@@ -134,6 +157,9 @@ def build_recovery_coverage(*, first_result_path: Path, first_result_sha256: str
                            _json(freeze_record_path))
     if first.get("recipe") != RECIPE or first.get("provider_calls") != 0:
         raise CompositionError("wrong first-result recipe")
+    route = first.get("route", "supplied_markdown")
+    if route not in {"supplied_markdown", "pdf_text"}:
+        raise CompositionError("unsupported first-result recovery route")
     if (gold.get("status") != "frozen" or gold.get("suite") != first.get("suite")
             or not isinstance(gold.get("cases"), list)
             or len(gold["cases"]) != gold.get("case_count")):
@@ -155,6 +181,17 @@ def build_recovery_coverage(*, first_result_path: Path, first_result_sha256: str
         if index not in by_page:
             raise CompositionError("resource page outside first result")
         by_page[index].append(resource)
+    gate_failures = Counter(
+        str(issue.get("gate_name", "unknown")) for issue in package.get("diagnostics", [])
+        if issue.get("kind") == "gate_failure")
+    structural = {
+        "resource_unit_count": sum(len(items) for items in by_page.values()),
+        "pages_with_units": sum(bool(items) for items in by_page.values()),
+        "pages_without_units": sum(not items for items in by_page.values()),
+        "units_by_printed_page": {str(page_map[index]): len(by_page[index]) for index in page_map},
+        "gate_failure_count": sum(gate_failures.values()),
+        "gate_failures_by_name": dict(sorted(gate_failures.items())),
+    }
     cases, totals = [], {"recovered_page_evidence": 0, "missing_page_evidence": 0,
                           "unsupported_image_evidence": 0}
     seen = set()
@@ -164,8 +201,14 @@ def build_recovery_coverage(*, first_result_path: Path, first_result_sha256: str
             raise CompositionError("invalid or repeated gold case ID")
         seen.add(case_id)
         evidence = case.get("evidence") or {}
-        markers = [evidence.get("normalized_markdown_page_marker")]
-        markers += evidence.get("additional_normalized_markdown_page_markers") or []
+        if route == "pdf_text":
+            key, additional_key = ("printer_friendly_pdf_printed_page",
+                                   "additional_printer_friendly_pdf_printed_pages")
+        else:
+            key, additional_key = ("normalized_markdown_page_marker",
+                                   "additional_normalized_markdown_page_markers")
+        markers = [evidence.get(key)]
+        markers += evidence.get(additional_key) or []
         markers = sorted({marker for marker in markers if isinstance(marker, int)})
         indices = [printed_to_index.get(marker) for marker in markers]
         resources = [item for index in indices if index is not None for item in by_page[index]]
@@ -182,9 +225,12 @@ def build_recovery_coverage(*, first_result_path: Path, first_result_sha256: str
                       "candidate_resource_ids": sorted({item["id"] for item in resources}),
                       "semantic_verdict": None})
     return {"format_version": 1, "score_basis": "page_evidence_recovery_only",
+            "score_recipe_sha256": _sha(Path(__file__)),
             "first_result_sha256": first_result_sha256, "frozen_gold_sha256": gold_sha256,
             "freeze_record_sha256": freeze_record_sha256,
-            "suite": first["suite"], "total_cases": len(cases), "totals": totals,
+            "suite": first["suite"], "recovery_route": route,
+            "recovery_diagnostics": first.get("recovery_diagnostics", []),
+            "total_cases": len(cases), "totals": totals, "structural": structural,
             "cases": cases, "provider_calls": 0, "provider_spend_usd": 0,
             "limitations": ["Candidate presence does not establish semantic correctness or task readiness.",
                             "Image-dependent cases require a separate asset recovery route."]}

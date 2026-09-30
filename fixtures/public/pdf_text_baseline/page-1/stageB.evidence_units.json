@@ -1,0 +1,51 @@
+{
+  "gate_diagnostics": [
+    {
+      "detail": {
+        "note": "single-unit page exempted",
+        "orphan_count": 0,
+        "total_units": 0
+      },
+      "gate_name": "orphan",
+      "passed": true
+    },
+    {
+      "detail": {
+        "overlap_count": 0,
+        "overlaps": [],
+        "total_units": 0
+      },
+      "gate_name": "bleed",
+      "passed": true
+    },
+    {
+      "detail": {
+        "issue_count": 0,
+        "issues": [],
+        "table_unit_count": 0
+      },
+      "gate_name": "table_integrity",
+      "passed": true
+    },
+    {
+      "detail": {
+        "max_chars": 5000,
+        "max_table_chars": 12000,
+        "min_chars": 20,
+        "oversized": [],
+        "oversized_count": 0,
+        "total_units": 0,
+        "undersized": [],
+        "undersized_count": 0,
+        "undersized_fail_ratio": 1.0,
+        "undersized_ratio": 0.0
+      },
+      "gate_name": "unit_size",
+      "passed": true
+    }
+  ],
+  "gates_passed": true,
+  "salvage_score": 1.0,
+  "unit_count": 0,
+  "units": []
+}

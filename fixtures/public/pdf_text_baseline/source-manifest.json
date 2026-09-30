@@ -1,0 +1,10 @@
+{
+  "source_files": {
+    "printer_friendly_pdf": {
+      "path": "fixtures/public/pdf-text-baseline.pdf",
+      "sha256": "2b3b4d0fcc1868a3a7c22af9adc029b8b2092f0985f8c53e8dabd31292d279b4"
+    }
+  },
+  "status": "project_authored_fixture",
+  "suite": "synthetic-pdf-text-baseline"
+}
