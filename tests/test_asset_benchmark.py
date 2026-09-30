@@ -5,10 +5,13 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 
 from compositor import CompositionError, JsonPackageStore
 from compositor.asset_benchmark import build_asset_review_packet
 from compositor.benchmark_review import validate_review_packet
+from compositor.experiment_ledger import SQLiteExperimentLedger
+from scripts import review_private_asset_recovery as driver
 
 
 MD_SHA = "a" * 64
@@ -34,6 +37,49 @@ def case(case_id: str, page: int, category: str) -> dict:
 
 
 class AssetBenchmarkTest(unittest.TestCase):
+    def test_prepare_ledger_failure_rolls_back_files_and_retries_same_run(self) -> None:
+        with TemporaryDirectory() as temp:
+            root = Path(temp)
+            inputs = {}
+            for role in ("source", "gold", "asset", "package"):
+                path = root / f"{role}.json"
+                path.write_text("{}\n", encoding="utf-8")
+                inputs[role] = path
+            packet = {"status": "unjudged", "cases": [
+                {"id": "ASSET-1", "observed_recovery": "candidate_present"}]}
+            run_id = "asset-prepare-retry-fixture"
+            original = SQLiteExperimentLedger.record_artifact
+            calls = 0
+
+            def fail_second_record(ledger: SQLiteExperimentLedger, **kwargs: object) -> str:
+                nonlocal calls
+                calls += 1
+                if calls == 2:
+                    raise RuntimeError("injected ledger write failure")
+                return original(ledger, **kwargs)
+
+            with patch.object(driver, "RUN_ID", run_id), \
+                    patch.object(driver, "_expected", return_value=(packet, inputs)):
+                with patch.object(SQLiteExperimentLedger, "record_artifact", fail_second_record):
+                    with self.assertRaisesRegex(RuntimeError, "injected ledger write failure"):
+                        driver.review("prepare", root)
+                review_dir = root / "reviews" / run_id
+                self.assertFalse((review_dir / "review-context.json").exists())
+                self.assertFalse((review_dir / "review-draft.json").exists())
+                with SQLiteExperimentLedger(root / "experiments.sqlite3", private_root=root) as ledger:
+                    self.assertIsNone(ledger.connection.execute(
+                        "SELECT 1 FROM runs WHERE run_id = ?", (run_id,)).fetchone())
+                    self.assertEqual(ledger.connection.execute(
+                        "SELECT count(*) FROM artifacts WHERE run_id = ?", (run_id,)).fetchone()[0], 0)
+
+                result = driver.review("prepare", root)
+                self.assertEqual(result["ledger"]["status"], "closed")
+                with SQLiteExperimentLedger(root / "experiments.sqlite3", private_root=root) as ledger:
+                    self.assertEqual(ledger.connection.execute(
+                        "SELECT count(*) FROM artifacts WHERE run_id = ?", (run_id,)).fetchone()[0], 5)
+                self.assertTrue((review_dir / "review-context.json").is_file())
+                self.assertTrue((review_dir / "review-draft.json").is_file())
+
     def test_mixed_source_candidates_stay_unjudged_and_context_is_immutable(self) -> None:
         with TemporaryDirectory() as temp:
             store = JsonPackageStore(Path(temp) / "packages")

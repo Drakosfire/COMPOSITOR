@@ -21,7 +21,7 @@ from compositor.experiment_ledger import SQLiteExperimentLedger  # noqa: E402
 from compositor.package import CompositionError  # noqa: E402
 
 
-RUN_ID = "conks-asset-recovery-v4-003"
+RUN_ID = "conks-asset-recovery-v4-004"
 SOURCE_SHA = "eebebb2f802ce31ba5a0be763db37a1dcac6e4d94e02c79b746caac5ee933b2a"
 GOLD_SHA = "0f0b570000e68d11534a4f38eec0e19b92112e1c6fa22ff3709f5ab09f5ce01b"
 ASSET_SHA = "8c76c676572da58421a502c7215cca10cfda7a5231e96515dc3286153c30ad2e"
@@ -59,7 +59,11 @@ def _encoded(value: dict[str, Any]) -> str:
 def _write_new(path: Path, value: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("x", encoding="utf-8") as stream:
-        stream.write(_encoded(value))
+        try:
+            stream.write(_encoded(value))
+        except BaseException:
+            path.unlink(missing_ok=True)
+            raise
 
 
 def _expected(private_root: Path) -> tuple[dict[str, Any], dict[str, Path]]:
@@ -118,21 +122,39 @@ def review(mode: str, private_root: Path) -> dict[str, Any]:
         with SQLiteExperimentLedger(database, private_root=root) as ledger:
             if ledger.connection.execute("SELECT 1 FROM runs WHERE run_id = ?", (RUN_ID,)).fetchone():
                 raise CompositionError("asset review run already exists")
-            _write_new(context_path, packet)
-            _write_new(draft_path, packet)
-            ledger.create_run(run_id=RUN_ID, suite="of-conks-cons-v21",
-                              source_manifest_sha256=SOURCE_SHA, frozen_gold_sha256=GOLD_SHA,
-                              recipe_sha256=_recipe_sha256(),
-                              recovery_route="supplied_markdown_plus_illustrated_assets",
-                              provider_exposure="none", provider=None, model=None,
-                              call_cap=0, spend_cap_usd=0)
-            for role, path in (("source_manifest", paths["source"]),
-                               ("frozen_gold", paths["gold"]),
-                               ("asset_manifest", paths["asset"]),
-                               ("asset_package", paths["package"]),
-                               ("asset_review_context", context_path)):
-                ledger.record_artifact(run_id=RUN_ID, role=role, name="primary", path=path)
-            ledger.close_run(RUN_ID)
+            db = ledger.connection
+            created: list[Path] = []
+            committed = False
+            db.execute("BEGIN IMMEDIATE")
+            try:
+                _write_new(context_path, packet)
+                created.append(context_path)
+                _write_new(draft_path, packet)
+                created.append(draft_path)
+                ledger.create_run(run_id=RUN_ID, suite="of-conks-cons-v21",
+                                  source_manifest_sha256=SOURCE_SHA, frozen_gold_sha256=GOLD_SHA,
+                                  recipe_sha256=_recipe_sha256(),
+                                  recovery_route="supplied_markdown_plus_illustrated_assets",
+                                  provider_exposure="none", provider=None, model=None,
+                                  call_cap=0, spend_cap_usd=0)
+                for role, path in (("source_manifest", paths["source"]),
+                                   ("frozen_gold", paths["gold"]),
+                                   ("asset_manifest", paths["asset"]),
+                                   ("asset_package", paths["package"]),
+                                   ("asset_review_context", context_path)):
+                    ledger.record_artifact(run_id=RUN_ID, role=role, name="primary", path=path)
+                if db.execute("UPDATE runs SET status = 'closed' WHERE run_id = ? AND status = 'active'",
+                              (RUN_ID,)).rowcount != 1:
+                    raise CompositionError("asset review run did not close")
+                db.execute("COMMIT")
+                committed = True
+            except BaseException:
+                if not committed:
+                    if db.in_transaction:
+                        db.execute("ROLLBACK")
+                    for path in reversed(created):
+                        path.unlink(missing_ok=True)
+                raise
             summary = ledger.summary(RUN_ID)
         return {"mode": mode, "packet_status": packet["status"],
                 "cases": [item["id"] for item in packet["cases"]],
