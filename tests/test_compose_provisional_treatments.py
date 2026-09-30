@@ -118,6 +118,16 @@ class ComposeProvisionalTreatmentsTest(unittest.TestCase):
             with self.assertRaisesRegex(CompositionError, "collide or overlap"):
                 compose_provisional_treatments(base=base, treatments=[first, overlapping],
                     output_store=store, package_id="overlap")
+            linked_overlap = deepcopy(second)
+            linked_overlap["diagnostics"][0]["relationship_id"] = "base-link"
+            with self.assertRaisesRegex(CompositionError, "collide or overlap"):
+                compose_provisional_treatments(base=base, treatments=[first, linked_overlap],
+                    output_store=store, package_id="linked-overlap")
+            foreign_relation = deepcopy(second)
+            foreign_relation["diagnostics"][0]["relationship_id"] = "identity-link"
+            with self.assertRaisesRegex(CompositionError, "unavailable relationship"):
+                compose_provisional_treatments(base=base, treatments=[first, foreign_relation],
+                    output_store=store, package_id="foreign-relation")
             collided = deepcopy(second)
             collided["resources"]["identity"] = resource("identity")
             with self.assertRaisesRegex(CompositionError, "collide or overlap"):

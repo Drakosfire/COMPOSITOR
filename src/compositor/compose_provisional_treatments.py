@@ -93,6 +93,7 @@ def _delta(base: dict[str, Any], treatment: dict[str, Any]) -> dict[str, Any]:
     if len(set(issue_hashes)) != len(issue_hashes) or base_issue_hashes.intersection(issue_hashes):
         raise CompositionError("diagnostic collision within treatment")
     footprint = set(added_resources)
+    relation_by_id = {item["id"]: item for item in relations}
     for relation in added_relations:
         for key in ("source_id", "target_id"):
             rid = relation[key]
@@ -104,6 +105,11 @@ def _delta(base: dict[str, Any], treatment: dict[str, Any]) -> dict[str, Any]:
         if not scopes.issubset(resources):
             raise CompositionError("added diagnostic references unavailable resource")
         footprint.update(scopes)
+        if "relationship_id" in issue:
+            relation = relation_by_id.get(issue["relationship_id"])
+            if relation is None:
+                raise CompositionError("added diagnostic references unavailable relationship")
+            footprint.update((relation["source_id"], relation["target_id"]))
     if not (added_resources or added_relations or added_diagnostics):
         raise CompositionError("empty treatment delta")
     review_records = {key: deepcopy(treatment[key]) for key in
