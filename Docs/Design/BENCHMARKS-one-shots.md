@@ -4,7 +4,7 @@ Status: benchmark design for review; no accepted COMPOSITOR gold or measured qua
 
 ## Separate suites and shared composition checks
 
-Maintain one suite for *Of Conks & Cons* and one for the operator's second selected one-shot. Its identity is pending. Each suite has its own source manifest, gold version, coverage accounting, results, and limitations. Report results separately so a strong result on one source cannot hide a weak result on the other.
+Maintain one suite for *Of Conks & Cons* and one for *A Wild Sheep Chase*. Each suite has its own source manifest, gold version, coverage accounting, results, and limitations. Report results separately so a strong result on one source cannot hide a weak result on the other.
 
 Add integration cases over the two packages, Eldyrwild, and a blank World. These complement source-specific scores; they do not replace them. Keep all private source bytes and derived source-specific gold in authorized private storage. Public Git may hold the protocol, schemas, synthetic/open fixtures, and source-safe summaries.
 
@@ -75,4 +75,10 @@ Preserve the unedited first-ingestion result for a frozen recipe. Report later r
 
 Record source readiness in the private benchmark store: dated inspections, source manifests and digests, extraction/normalization provenance, prior-target discrepancies, review decisions, and unresolved source dependencies. Verify those records before freezing each suite. Keep private corpus metadata and inspection reports outside public Git unless their publication is explicitly authorized.
 
-Neither suite currently has accepted COMPOSITOR gold. The second one-shot needs an exact identity and revision before its author is dispatched. A smaller focused regression fixture complements these suites but cannot substitute for either adventure's benchmark.
+Neither suite currently has accepted COMPOSITOR gold. Both selected titles are established; pin each exact source revision and extraction provenance before gold authoring. A smaller focused regression fixture complements these suites but cannot substitute for either adventure's benchmark.
+
+## A Wild Sheep Chase: source and recovery plan
+
+The selected second adventure is *A Wild Sheep Chase*. [Winghorn Press](https://winghornpress.com/adventures/a-wild-sheep-chase/) offers a free download and links to its [v2 PDF](https://winghornpress.com/wp-content/uploads/2018/02/the_wild_sheep_chase_v2.pdf). The PDF credits identify original material as copyright 2016 Richard Jansen-Parkes and publication under the Dungeon Masters Guild Community Content Agreement, alongside third-party copyrighted material. This inspection establishes free availability, but has not established a general redistribution license for the text or artwork. Keep source bytes and derived gold private under the repository's source-handling policy; use project-authored or explicitly open material for the public fixture.
+
+Compare the selected PDF with existing processed Markdown and recovered assets before choosing another extraction pass. Record their relationship and any manual cleanup privately. The publisher's current PDF is a reference for identification, not an automatic replacement for the selected local revision. Render pages or extract embedded images directly where those operations suffice. Use the existing DeepSeek OCR tooling for deficient text/layout recovery when needed, verifying local runtime readiness or an explicitly scoped API run first. Score PDF recovery separately from semantic processing of supplied Markdown.

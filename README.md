@@ -14,7 +14,7 @@ The research includes rules extraction and exact bindings for statblocks and Rul
 
 ## Intended evaluation
 
-Two independently reported one-shot benchmarks will establish whether ingestion and package preparation are useful: *Of Conks & Cons* and the operator's second selected one-shot, whose source identity still needs confirmation. Each receives its own gold author and source-grounded review loop. Together they also exercise loading either or both packages with Eldyrwild or a blank World, source-scoped and combined queries, and explicit Worldbuilding adaptations.
+Two independently reported one-shot benchmarks will establish whether ingestion and package preparation are useful: *Of Conks & Cons* and *A Wild Sheep Chase*. Each receives its own gold author and source-grounded review loop. Together they also exercise loading either or both packages with Eldyrwild or a blank World, source-scoped and combined queries, and explicit Worldbuilding adaptations.
 
 The first implementation should reuse existing research and establish reproducible input, artifact, and replay boundaries. A tiny public fixture in `.json` files supports those engineering checks. Private database records will persist real-source experiments, versions, outputs, judgments, and receipts. Both storage forms should express the same logical artifacts, with private JSON exports for replay. Database technology is still open.
 

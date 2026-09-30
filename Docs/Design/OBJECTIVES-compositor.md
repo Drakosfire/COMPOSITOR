@@ -54,7 +54,7 @@ Database selection, deployment, retention, and the exact schema remain design de
 
 ## Evaluation direction
 
-Use separate benchmarks for *Of Conks & Cons* and the second selected one-shot. Each receives its own gold author and iterative source-grounded parent review. The [benchmark protocol](BENCHMARKS-one-shots.md) defines independence, freeze, acceptance, and regression handling.
+Use separate benchmarks for *Of Conks & Cons* and *A Wild Sheep Chase*. Each receives its own gold author and iterative source-grounded parent review. The [benchmark protocol](BENCHMARKS-one-shots.md) defines independence, freeze, acceptance, and regression handling.
 
 The public fixture is a reproducibility aid. The two actual adventures are the primary capability witnesses. A composition scenario exercises both packages with Eldyrwild and a blank World, including scoped queries, adaptation, audience boundaries, and unload behavior.
 
@@ -78,7 +78,7 @@ These are capability gates, not a fixed number of PRs or a calendar commitment. 
 
 ## Open choices
 
-- Exact identity/revision of the second one-shot; do not silently substitute a synthetic fixture or an unrelated campaign recap.
+- Exact source revisions and extraction provenance for both selected one-shots; do not silently substitute another edition, a synthetic fixture, or an unrelated campaign recap.
 - Database/service and isolated experimental namespace.
 - Source-specific expected outcomes and named human review of workflow usefulness.
 - Numerical quality thresholds, practical repair tolerance, model treatments, and run budgets, frozen before scored runs.
