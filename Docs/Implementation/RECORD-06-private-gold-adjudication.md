@@ -1,0 +1,9 @@
+# Private frozen-gold adjudication
+
+Status: **source-safe implementation candidate**. No adventure first result or gold score is claimed.
+
+`scripts/review_private_benchmark.py` prepares a private review draft only for a closed run whose frozen-gold digest matches the supplied suite. It verifies the ledger-pinned `first_result`, `assembled_package`, and `run_report` artifacts and reloads the exact package revision. Every package resource must carry the same supplied-Markdown SHA-256 as the report. The draft puts each frozen case's source locator, expectation, alternatives, forbidden outcomes, severity, and task beside resources from its cited pages, plus page and global diagnostics. It leaves every verdict blank. The suggested page-local candidates are aids to review, not matching or scoring decisions; a reviewer must inspect the source and may cite resources from other pages.
+
+Finalization rebuilds the expected packet from the original pins and rejects changes to gold, package context, case inventory, and resource index. Every case then needs an explicit verdict, reviewer name, source-grounded rationale, and valid package resource citations (possibly an empty list for omissions). Only a complete review writes a new immutable `gold_adjudication` artifact and ledger judgments. The summary reports denominators and verdict counts by task and severity; it does not infer an acceptance threshold or claim human review from an agent label. The editable draft remains private and unscored.
+
+The synthetic lifecycle smoke creates a closed pinned run, prepares a blank packet, rejects premature finalization, records a complete explicit review, and reopens its ledger artifact and judgment. Separate checks reject altered gold context and source substitution. No provider calls, real-source exports, World writes, or public gold are in this slice. PRIME reviews and owns merge authority.
