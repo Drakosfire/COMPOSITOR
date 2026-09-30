@@ -204,3 +204,80 @@ def score_owner_page_coverage(*, first_result_path: Path, first_result_sha256: s
                         "Unselected cases are excluded from the fully scoped denominator.",
                         "Image-dependent cases need a separate asset treatment."],
     }
+
+
+def build_owner_review_packet(*, first_result_path: Path, first_result_sha256: str,
+                              gold_path: Path, gold_sha256: str,
+                              freeze_record_path: Path,
+                              freeze_record_sha256: str) -> dict[str, Any]:
+    """Prepare a pinned human review of an owner A/B first result.
+
+    Page matching suggests evidence only. Every task verdict remains blank until a
+    reviewer checks the source, the package, and the intended consumer behavior.
+    The packet is private when its source package contains private document text.
+    """
+    coverage = score_owner_page_coverage(
+        first_result_path=first_result_path,
+        first_result_sha256=first_result_sha256,
+        gold_path=gold_path, gold_sha256=gold_sha256,
+        freeze_record_path=freeze_record_path,
+        freeze_record_sha256=freeze_record_sha256,
+    )
+    first = _pinned_json(Path(first_result_path), first_result_sha256, "first result")
+    gold = _pinned_json(Path(gold_path), gold_sha256, "frozen gold")
+    package = first["package"]
+    resources = package["resources"]
+    cases: list[dict[str, Any]] = []
+    for case, scoped in zip(gold["cases"], coverage["cases"], strict=True):
+        if case["id"] != scoped["id"]:
+            raise CompositionError("gold and page coverage case order differs")
+        candidate_ids = scoped["candidate_resource_ids"]
+        candidates = [resources[uid] for uid in candidate_ids]
+        selected_indices = {index for index, printed in first["page_map"].items()
+                            if printed in scoped["selected_printed_pages"]}
+        page_diagnostics = [issue for issue in package.get("diagnostics", [])
+                            if str(issue.get("page_index")) in selected_indices]
+        cases.append({
+            "id": case["id"], "category": case.get("category"),
+            "task": case.get("task"), "severity": case.get("severity"),
+            "audience": case.get("audience"),
+            "expectation_origin": case.get("expectation_origin"),
+            "expectation": case.get("expectation"),
+            "acceptable_alternatives": case.get("acceptable_alternatives", []),
+            "forbidden_outcomes": case.get("forbidden_outcomes", []),
+            "rationale": case.get("rationale"),
+            "source_evidence": case.get("evidence", {}),
+            "coverage_state": scoped["coverage_state"],
+            "selected_printed_pages": scoped["selected_printed_pages"],
+            "unselected_printed_pages": scoped["unselected_printed_pages"],
+            "candidate_resources": candidates,
+            "page_diagnostics": page_diagnostics,
+            "review": None,
+        })
+    context: dict[str, Any] = {
+        "format_version": 1,
+        "review_basis": "owner_ab_first_source_package",
+        "task_success_inferred_from_page_presence": False,
+        "suite": first["suite"],
+        "gold_sha256": gold_sha256,
+        "freeze_record_sha256": freeze_record_sha256,
+        "first_result_sha256": first_result_sha256,
+        "source_manifest_sha256": first["source_manifest_sha256"],
+        "evidence_manifest_sha256": first["evidence_manifest_sha256"],
+        "source_sha256": first["direct_source_sha256"],
+        "package_ref": {key: package[key] for key in ("package_id", "revision")},
+        "page_map": first["page_map"],
+        "coverage_totals": coverage["totals"],
+        "provider_usage": first["provider_usage"],
+        "global_diagnostics": [issue for issue in package.get("diagnostics", [])
+                               if "page_index" not in issue],
+        "available_resource_ids": sorted(resources),
+        "cases": cases,
+    }
+    pinned_context = {**context, "cases": [
+        {key: value for key, value in case.items() if key != "review"}
+        for case in cases]}
+    context["context_sha256"] = sha256(json.dumps(
+        pinned_context, sort_keys=True, ensure_ascii=False,
+        separators=(",", ":")).encode("utf-8")).hexdigest()
+    return context
