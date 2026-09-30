@@ -1,0 +1,46 @@
+# Local configuration. Keep .env.example tracked.
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Private sources, derived gold, run artifacts, and exports.
+/.local/
+/private/
+/corpus/
+/out/
+/artifacts/
+/data/
+/evals/private/
+/fixtures/private/
+
+# Source documents accidentally copied outside a reserved private directory.
+*.pdf
+*.docx
+*.epub
+
+# Local databases and journals, wherever a tool creates them.
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+
+# Python and editor/runtime caches.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyright/
+.coverage
+htmlcov/
+.venv/
+.venv-*/
+.uv-cache/
+
+# Node build artifacts if a consumer tool is developed here later.
+node_modules/
+dist/
+build/

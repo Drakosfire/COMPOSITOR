@@ -1,37 +1,44 @@
 # COMPOSITOR
 
-COMPOSITOR is a proposed open-source research program for making **portable, source-linked Compositions** from documents people bring themselves. Its first goal is a reproducible lab baseline: given an exact document and its source identity, produce a bounded set of inspectable resources and relationships while showing what was resolved, kept for reference, unsupported, or left unresolved.
+COMPOSITOR is an ingestion and processing program for making **portable, source-linked Compositions** from documents people bring themselves. Its goal is competent to better-than-good first ingestion into packages usable for **Worldbuilding, Planning, and Playing**. A package preserves resources, relationships, source identity, audience boundaries, adaptations, and explicit unresolved or unsupported material.
 
-The repository currently contains its foundation documents only. There is no ingestion pipeline, Composition format, fixture, replay command, or production integration yet. The broader research program remains subject to operator alignment and a bounded PRIME dispatch.
+The repository currently contains operating guidance, objectives, and benchmark design. There is no implemented ingestion pipeline, Composition format, fixture, database adapter, or production integration yet.
+
+Start with the [accepted Composition contract and assembly process](Docs/Design/CONTRACT-composition.md), [objectives and roadmap](Docs/Design/OBJECTIVES-compositor.md), and [one-shot benchmark and gold protocol](Docs/Design/BENCHMARKS-one-shots.md).
+
+The [draft capability PR stack](Docs/Roadmaps/ROADMAP-composition-pr-stack.md) groups implementation into reviewable bites with concise handoffs. It is proposed sequencing for PRIME review; future dispatches must pin their actual inputs and boundaries.
+
+Compositions support source and adapted packages, selectable linked or bundled rule dependencies, and saving adaptations as changes over a pinned original or as complete snapshots. Dependent updates require review. Drafts remain usable while readiness is tracked separately for Worldbuilding, Planning, and Playing. These are accepted design semantics; the concrete format and runtime are not implemented yet.
 
 ## Why this exists
 
 Role-playing source material can mix facts, procedures, exceptions, references, and prose. A useful Composition must preserve where each claim came from, where it applies, and what the system could not establish. Research here asks which approaches can do that reliably, with enough evidence for another researcher to reproduce and challenge the result.
 
-The first milestone is deliberately small. It should accept an exact local document and a shareable fixture, produce source-linked results within a stated audience and domain, and fail clearly on missing or changed inputs. Ruleset compilation, Drools, executable mechanics, and full-book coverage are separate research questions.
+The research includes rules extraction and exact bindings for statblocks and Rules Lawyer, alongside narrative, characters, places, procedures, encounters, tables, and assets. Ruleset compilation and execution remain separate capabilities to investigate.
 
-## Intended first lab baseline
+## Intended evaluation
 
-Once the program is activated and the first assignment is pinned, the baseline should provide:
+Two independently reported one-shot benchmarks will establish whether ingestion and package preparation are useful: *Of Conks & Cons* and *A Wild Sheep Chase*. Each receives its own gold author and source-grounded review loop. Together they also exercise loading either or both packages with Eldyrwild or a blank World, source-scoped and combined queries, and explicit Worldbuilding adaptations.
 
-1. A small, openly licensed or project-authored fixture with stable source anchors and documented expected outcomes.
-2. A command-line path from an exact local input to a bounded, inspectable Composition with explicit resolved, reference-only, unsupported, and unresolved results.
-3. Deterministic replay with pinned dependencies and no hidden model call, plus visible failures for missing input, source mismatch, broken references, and audience mistakes.
-4. Independent review of the fixture outcomes and a report of limits, failures, and costs. Optional live-model experiments need separate data and budget approval.
+The first implementation should reuse existing research and establish reproducible input, artifact, and replay boundaries. A tiny public fixture in `.json` files supports those engineering checks. Private database records will persist real-source experiments, versions, outputs, judgments, and receipts. Both storage forms should express the same logical artifacts, with private JSON exports for replay. Database technology is still open.
 
-These are acceptance targets, not implemented features. The exact format, commands, dependencies, and files will be chosen in the authorized implementation slice.
+First-ingestion quality, repairs, coverage, known imperfections, and human review effort will be reported separately. These are acceptance targets, not implemented features.
 
 ## Boundaries
 
-COMPOSITOR is a lab for research and evidence. It does not publish to production, mutate source authority or campaign canon, execute mechanics, or become a permanent fork of another repository's runtime. Production promotion needs a named destination owner and contract.
+COMPOSITOR owns ingestion and processing through package preparation. The original source, authored World additions, applicable rules, and runtime outcomes keep separate identities and provenance. Loading packages changes the workspace's active content; importing or publishing durable World changes uses the owning governed contracts.
 
 User documents stay outside Git by default. A public codebase does not make an input document public or grant permission to send it to a model provider. Initial fixtures must be openly licensed or project-authored; any other material requires an explicit rights and handling decision.
 
-This work sits alongside [DungeonOverMind](https://github.com/Drakosfire/DungeonOverMind) for ecosystem architecture, RulesIngestion for ingestion substrate, GenerationEngine for reusable inference execution, DungeonMind and WorldKeeper for governed knowledge and publication, DungeonMindBuddy for product workflows, and RulesEngine for mechanics execution. Each keeps its own authority.
+This work builds on existing RulesIngestion research and tooling. [DungeonOverMind](https://github.com/Drakosfire/DungeonOverMind) coordinates cross-repository transitions; GenerationEngine supplies reusable inference execution; DungeonMind and WorldKeeper supply governed knowledge and publication; DungeonMindBuddy owns product workflows. Transfer of existing ingestion components and retrofit versus corpus re-ingestion will be decided from benchmark evidence.
 
 ## Working in this repository
 
-Read [AGENTS.md](AGENTS.md) before agent-assisted work. An active assignment also needs a pinned mandate/handoff and an activation record with its write, data, runtime, provider, and budget scope. Repository initialization and these documents do not activate experiments or authorize paid runs.
+Read [AGENTS.md](AGENTS.md) before agent-assisted work. Follow the current operator direction and record the write, data, runtime, provider, and budget scope needed by the assigned work. Design decisions do not automatically authorize paid runs or production changes.
+
+Copy [.env.example](.env.example) to `.env` and fill the source paths and settings needed for your local experiments. It includes optional OpenAI, OpenRouter, and Buddy internal API key names. COMPOSITOR does not consume these settings yet. `.env` stays local.
+
+Keep private PDFs, processed Markdown, reviewed gold, source-derived packages, media, and replay exports under `.local/private/` (or at external paths named in `.env`). Write generated runs and diagnostics under `.local/out/`; preserve first results and later repairs in separate run directories. Both roots are ignored by Git. Other common private corpus and artifact directories are ignored as a safeguard. Put intentionally public, project-authored fixtures under `fixtures/public/` and source-safe benchmark definitions under `evals/public/` once those directories are created. Review any file before explicitly adding it to the public repo.
 
 There is no installation or test command to run yet. The first implementation PR should add only the dependencies, fixture, workflow, and verification needed for its bounded baseline, then document their actual commands here.
 
