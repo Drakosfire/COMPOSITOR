@@ -2,7 +2,7 @@
 
 COMPOSITOR is an ingestion and processing program for making **portable, source-linked Compositions** from documents people bring themselves. Its goal is competent to better-than-good first ingestion into packages usable for **Worldbuilding, Planning, and Playing**. A package preserves resources, relationships, source identity, audience boundaries, adaptations, and explicit unresolved or unsupported material.
 
-The repository contains operating guidance, objectives, benchmark design, a deterministic Composition package kernel, and an offline adapter for RulesIngestion evidence artifacts. Full adventure ingestion, the private experiment database, and production integrations remain future work.
+The repository contains operating guidance, objectives, benchmark design, a deterministic Composition package kernel, an offline adapter for RulesIngestion evidence artifacts, and a private SQLite experiment ledger. Full adventure ingestion, scored comparisons, and production integrations remain future work.
 
 Start with the [accepted Composition contract and assembly process](Docs/Design/CONTRACT-composition.md), [objectives and roadmap](Docs/Design/OBJECTIVES-compositor.md), and [one-shot benchmark and gold protocol](Docs/Design/BENCHMARKS-one-shots.md).
 
@@ -42,7 +42,7 @@ Keep private PDFs, processed Markdown, reviewed gold, source-derived packages, m
 
 The kernel needs Python 3.11 or newer and has no runtime dependencies. Run its contract witnesses with `PYTHONPATH=src python3 -m unittest discover -s tests -v`. To build a wheel in a prepared Python environment, run `python3 -m pip wheel --no-deps --no-build-isolation --wheel-dir /tmp/compositor-build .`.
 
-`JsonPackageStore` writes immutable, content-addressed revisions beneath an explicit directory. `load_evidence_draft` reads pinned Stage A/B artifacts, preserves unit locators and recovery route, and exposes missing pages/assets and failed gates without hiding the available draft. Keep real-source stores under `.local/private/`, not `fixtures/public/`. The [package-cycle record](Docs/Implementation/RECORD-01-package-cycle.md) and [document-to-draft record](Docs/Implementation/RECORD-02-document-to-draft.md) give the exact scopes, smoke checks, and limits.
+`JsonPackageStore` writes immutable, content-addressed revisions beneath an explicit directory. `load_evidence_draft` reads pinned Stage A/B artifacts, preserves unit locators and recovery route, and exposes missing pages/assets and failed gates without hiding the available draft. `SQLiteExperimentLedger` records exact run pins, immutable private artifact references, judgments, and bounded provider receipts. Keep real-source stores and the database under `.local/private/`, not `fixtures/public/`. The [package-cycle record](Docs/Implementation/RECORD-01-package-cycle.md), [document-to-draft record](Docs/Implementation/RECORD-02-document-to-draft.md), and [ledger record](Docs/Implementation/RECORD-03-experiment-ledger.md) give the exact scopes, smoke checks, and limits.
 
 ## Open-source status
 
