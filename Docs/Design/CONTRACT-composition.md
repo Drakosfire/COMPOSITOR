@@ -26,6 +26,10 @@ These are required concepts, not finalized JSON field names or database tables.
 
 The logical artifacts must be expressible through the public JSON fixture and private experimental persistence described in the [objectives](OBJECTIVES-compositor.md). Physical encoding and storage technology remain open.
 
+## Production ownership clarification
+
+The two save forms and portable package semantics above remain accepted. The current JSON package kernel and SQLite ledger are lab/replay representations. In a production path, COMPOSITOR prepares reviewed, evidence-linked contribution candidates and selection/export manifests pinned to DungeonMind-managed Adventure or Rules space revisions. The proposed MIND vNext seam mints durable space/source/evidence/graph identities, admits exact source spans, materializes reviewed contributions against the admitted parent, and serves revision-pinned reads; it still needs an actual witness. A MIND space ID is not a product World ID. WorldKeeper owns governed World publication. This clarification does not imply that a cross-space join, contribution-decision ledger, or production package persistence API already exists; those contracts require owner review and a real consumer witness.
+
 ## Effective content and interaction
 
 Reading and questions use effective content: the base content, accepted changes, and available dependencies, constrained by active selection and audience. Answers distinguish original material, adaptations, and unresolved information and retain evidence references. Unavailable material must not be silently substituted with another revision or invented.
