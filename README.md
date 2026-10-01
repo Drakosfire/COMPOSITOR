@@ -2,7 +2,7 @@
 
 COMPOSITOR is an ingestion and processing program for making **portable, source-linked Compositions** from documents people bring themselves. Its goal is competent to better-than-good first ingestion into packages usable for **Worldbuilding, Planning, and Playing**. A package preserves resources, relationships, source identity, audience boundaries, adaptations, and explicit unresolved or unsupported material.
 
-The repository contains operating guidance, objectives, benchmark design, a deterministic Composition package kernel, an offline adapter for RulesIngestion evidence artifacts, and a private SQLite experiment ledger. Full source evidence recovery has been piloted privately on both one-shots; task-level comparisons and production integrations remain future work.
+The repository contains operating guidance, objectives, benchmark design, a deterministic Composition package kernel, an offline adapter for RulesIngestion evidence artifacts, and a private SQLite experiment ledger. These stores support research and replay. Full source evidence recovery has been piloted privately on both one-shots; task-level comparisons and production integrations remain future work.
 
 Start with the [accepted Composition contract and assembly process](Docs/Design/CONTRACT-composition.md), [objectives and roadmap](Docs/Design/OBJECTIVES-compositor.md), and [one-shot benchmark and gold protocol](Docs/Design/BENCHMARKS-one-shots.md).
 
@@ -14,7 +14,7 @@ The first format implements source and adapted packages, selectable linked or bu
 
 Role-playing source material can mix facts, procedures, exceptions, references, and prose. A useful Composition must preserve where each claim came from, where it applies, and what the system could not establish. Research here asks which approaches can do that reliably, with enough evidence for another researcher to reproduce and challenge the result.
 
-The research includes rules extraction and exact bindings for statblocks and Rules Lawyer, alongside narrative, characters, places, procedures, encounters, tables, and assets. Ruleset compilation and execution remain separate capabilities to investigate.
+The research includes rules extraction and exact bindings for statblocks and Rules Lawyer, alongside narrative, characters, places, procedures, encounters, tables, and assets. The Rules track also requires a bounded Drools execution witness under RulesEngine or an agreed adapter; it does not choose the production rules engine.
 
 ## Intended evaluation
 
@@ -26,7 +26,7 @@ First-ingestion quality, repairs, coverage, known imperfections, and human revie
 
 ## Boundaries
 
-COMPOSITOR owns ingestion and processing through package preparation. The original source, authored World additions, applicable rules, and runtime outcomes keep separate identities and provenance. Loading packages changes the workspace's active content; importing or publishing durable World changes uses the owning governed contracts.
+COMPOSITOR owns ingestion and processing through reviewed contribution candidates and package preparation. DungeonMind mints durable Adventure/Rules space identities, admits exact source evidence, materializes reviewed contributions, and serves revision-pinned graph/evidence reads. A Composition selected or exported for a consumer pins those owner revisions; COMPOSITOR's local package store is a replay witness, not an independent production graph store. The original source, authored World additions, applicable rules, and runtime outcomes keep separate identities and provenance. Loading packages changes the workspace's active content; importing or publishing durable World changes uses the owning governed contracts.
 
 User documents stay outside Git by default. A public codebase does not make an input document public or grant permission to send it to a model provider. Initial fixtures must be openly licensed or project-authored; any other material requires an explicit rights and handling decision.
 

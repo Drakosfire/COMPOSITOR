@@ -37,9 +37,9 @@ These rules follow the shared DungeonMind ecosystem core. Repository-specific ru
 ## Ownership and scope
 
 - COMPOSITOR owns ingestion and processing design, experiments, pipeline implementations, source adapters, semantic resource production, package preparation, and evaluation. Reuse the existing ingestion research and tooling. Moving maintained components or replacing existing ingestions requires a named migration; the ownership direction does not silently transfer occupied implementation paths.
-- GenerationEngine retains reusable provider execution; DungeonMind/WorldKeeper retain their governed knowledge and publication boundaries; Buddy retains product surfaces and workflows. COMPOSITOR packages and rule bindings support these consumers, including Rules Lawyer, through explicit contracts.
+- GenerationEngine retains reusable provider execution; DungeonMind owns durable Adventure/Rules space IDs, source admission, governed graph revisions, and revision-pinned evidence reads; WorldKeeper retains governed World publication; Buddy retains product surfaces and workflows. COMPOSITOR produces reviewed contribution candidates and package selection/export representations through explicit contracts. Its local JSON and SQLite stores are research/replay stores, not durable graph authority.
 - Consume pinned owner contracts. Return a proposed production contract or promotion to the owner and PRIME instead of importing lab internals into a product or copying an owner runtime into this repository.
-- Ruleset compilation, Drools evaluation, a general plugin framework, web dashboard, autonomous full-book formalization, and production publication are later possible assignments, not launch requirements.
+- When the Rules track begins, include a bounded Drools execution witness owned by RulesEngine or an agreed adapter, outside DungeonMind. That witness does not select a production rules engine. A general plugin framework, web dashboard, autonomous full-book formalization, and production publication remain later possible assignments.
 - A fresh authorized researcher should be able to replay the named baseline from exact source/evidence and dependency pins, see the supported scope, and observe explicit failures. If this cannot be shown, report a failed or incomplete witness rather than calling the baseline complete.
 
 ## Git and handback

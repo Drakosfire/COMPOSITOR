@@ -10,7 +10,7 @@ COMPOSITOR owns ingestion and processing: taking supplied documents through fait
 
 The operator's current direction extends the initial repository-foundation scope and earlier proposed lab mandate. Existing research and implementations are the starting assets. Moving maintained RulesIngestion components or replacing existing ingestions requires an explicit transition with their current owners; it does not require abandoning the broader COMPOSITOR objective.
 
-GenerationEngine retains shared provider execution. DungeonMind/WorldKeeper retain governed knowledge and publication. Buddy retains product surfaces. COMPOSITOR supplies inspectable resources, packages, and bindings through the appropriate contracts. Rules Lawyer is a consumer/component and possibly a future Surface; its eventual UI location is open.
+GenerationEngine retains shared provider execution. DungeonMind owns durable Adventure/Rules spaces, exact source admission, governed graph revisions, and revision-pinned evidence reads; WorldKeeper owns governed World publication. Buddy retains product surfaces. COMPOSITOR supplies reviewed contribution candidates, selection/export representations, and bindings through the appropriate contracts. Its private experiment store is replay-only, not graph authority. Rules Lawyer is a consumer/component and possibly a future Surface; its eventual UI location is open.
 
 ## Success from the user's perspective
 
@@ -38,7 +38,7 @@ Define operations distinctly:
 - **Ingest:** produce artifacts from a pinned source through a recorded processing recipe.
 - **Load/unload:** activate/deactivate an existing package in a workspace; preserve its stored artifacts and original source.
 - **Adapt:** author a traceable addition, modification, or binding in a selected World context.
-- **Save:** persist working material in its owning store, including a Composition revision or distinct derived package in either accepted save form. Incomplete drafts and pending impact review can be saved; saving does not itself publish World truth.
+- **Save:** preserve a Composition revision or distinct derived package in either accepted save form. The local JSON kernel proves these semantics for research/replay; production selection/export pins owner-managed revisions and requires an agreed persistence contract. Incomplete drafts and pending impact review can be saved; saving does not itself publish World truth.
 - **Import/admit:** request incorporation into a selected World through its owner's validation and governance contract, keeping source and adaptation provenance.
 - **Publish:** perform the World owner's explicit publication transition, with the confirmation and revision semantics that contract requires. Workspace selection and draft saves do not imply this transition.
 
@@ -75,7 +75,7 @@ The [draft Composition PR stack](../Roadmaps/ROADMAP-composition-pr-stack.md) gr
 3. **Deliver a reproducible ingestion path.** Reuse prior research and tooling; establish exact input, resource, persistence, and replay contracts. Preserve and score first-run results for each adventure. Diagnose evidence recovery, semantic interpretation, assembly, and interaction failures separately.
 4. **Reach useful package quality.** Improve the pipeline against the separate suites, retaining earlier results and reporting repair effort. Demonstrate the named Worldbuilding, Planning, and Playing tasks with explicit remaining gaps.
 5. **Demonstrate composition and interaction.** Load either/both packages, Eldyrwild, and a blank World; perform scoped and combined queries; add adaptations; unload and reload. Validate at the real graph/product boundary rather than substituting helper-only tests.
-6. **Prove shared rule interaction.** Ingest the needed rules, bind exact definitions, and show consistent statblock and Rules Lawyer retrieval, including amendments and stale/missing behavior. Integrate this with the workflow witnesses; broader mechanics execution is a separate capability.
+6. **Prove shared rule interaction.** Ingest the needed rules, bind exact definitions, and show consistent statblock and Rules Lawyer retrieval, including amendments and stale/missing behavior. Integrate this with the workflow witnesses. When the Rules track begins, also run a separately owned, bounded Drools execution witness through RulesEngine or an agreed adapter. Record its rule/fact revisions, result provenance, limits, and failures; it does not select a production engine.
 7. **Transfer the learning to existing corpora.** Compare retrofit of compatible artifacts against re-ingestion from exact originals. Choose from quality, compatibility, review effort, and cost evidence. Preserve authored adaptations and provenance; do not overwrite an existing World merely to replace an ingestion.
 
 These are capability gates, not a fixed number of PRs or a calendar commitment. Define bounded implementation slices as their prerequisites become concrete. Full-book processing may be economical earlier: measure a representative pass, then scale when justified. Existing retrieval benchmarks remain useful but need semantic, binding, and workflow checks for these objectives.
@@ -86,6 +86,6 @@ These are capability gates, not a fixed number of PRs or a calendar commitment. 
 - Database/service and isolated experimental namespace.
 - Source-specific expected outcomes and named human review of workflow usefulness.
 - Numerical quality thresholds, practical repair tolerance, model treatments, and run budgets, frozen before scored runs.
-- Owner contracts for workspace activation, graph projection, and production ingestion migration.
+- Owner contracts for workspace activation, profile/admission semantics, graph projection, and production ingestion migration. The first Adventure witness requires a MIND-reviewed `SemanticProfileDescriptorV2` and MIND-minted space ID; cross-space joins and a contribution ledger are not assumed.
 
 Keep exact source inventories, readiness inspections, and private experiment evidence in the private benchmark store. Prior corpus work informs the design; completed COMPOSITOR benchmarks still need to be established.
