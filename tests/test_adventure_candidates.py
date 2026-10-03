@@ -27,7 +27,8 @@ class AdventureCandidateTests(unittest.TestCase):
             {"kind": "same_person"}, {"kind": "conditional_gives"}, {"kind": "receives"}]})
         self.assertEqual(found["paths"][0]["nodes"], ["courier", "mira", "nar", "key"])
         self.assertEqual(attribute_failure(found, "key", source_present=True,
-                         expected_node_present=True, expected_edges_present=True), "pass")
+                         expected_node_present=True, expected_relation_present=True,
+                         endpoint_binding_correct=True), "pass")
         self.assertFalse(any(p["nodes"][-1] == "gate" for p in found["paths"]))
 
     def test_requires_relation_evidence_and_cross_page_review(self):
@@ -54,13 +55,20 @@ class AdventureCandidateTests(unittest.TestCase):
     def test_failure_attribution(self):
         miss = {"paths": []}
         self.assertEqual(attribute_failure(miss, "key", source_present=False,
-                         expected_node_present=False, expected_edges_present=False), "absent_source")
+                         expected_node_present=False, expected_relation_present=False,
+                         endpoint_binding_correct=False), "absent_source")
         self.assertEqual(attribute_failure(miss, "key", source_present=True,
-                         expected_node_present=False, expected_edges_present=False), "absent_candidate")
+                         expected_node_present=False, expected_relation_present=False,
+                         endpoint_binding_correct=False), "absent_candidate")
         self.assertEqual(attribute_failure(miss, "key", source_present=True,
-                         expected_node_present=True, expected_edges_present=False), "wrong_identity_or_endpoint")
+                         expected_node_present=True, expected_relation_present=False,
+                         endpoint_binding_correct=False), "absent_candidate")
         self.assertEqual(attribute_failure(miss, "key", source_present=True,
-                         expected_node_present=True, expected_edges_present=True), "failed_path_selection")
+                         expected_node_present=True, expected_relation_present=True,
+                         endpoint_binding_correct=False), "wrong_identity_or_endpoint")
+        self.assertEqual(attribute_failure(miss, "key", source_present=True,
+                         expected_node_present=True, expected_relation_present=True,
+                         endpoint_binding_correct=True), "failed_path_selection")
 
 
 if __name__ == "__main__":

@@ -112,7 +112,8 @@ def evaluate_probe(graph: dict[str, Any], probe: dict[str, Any]) -> dict[str, An
 
 
 def attribute_failure(result: dict[str, Any], expected_end: str, *, source_present: bool,
-                      expected_node_present: bool, expected_edges_present: bool) -> str:
+                      expected_node_present: bool, expected_relation_present: bool,
+                      endpoint_binding_correct: bool) -> str:
     """Classify a scored miss after the immutable first result exists."""
     if any(path["nodes"][-1] == expected_end for path in result["paths"]):
         return "pass"
@@ -120,6 +121,8 @@ def attribute_failure(result: dict[str, Any], expected_end: str, *, source_prese
         return "absent_source"
     if not expected_node_present:
         return "absent_candidate"
-    if not expected_edges_present:
+    if not expected_relation_present:
+        return "absent_candidate"
+    if not endpoint_binding_correct:
         return "wrong_identity_or_endpoint"
     return "failed_path_selection"
