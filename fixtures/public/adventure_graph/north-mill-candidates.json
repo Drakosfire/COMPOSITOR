@@ -1,0 +1,22 @@
+{
+  "title": "North Mill project-authored graph fixture",
+  "source_units": [
+    {"unit_id": "north-0", "page_index": 0, "text": "Mira hides a brass key at the mill while wearing a blue coat. The north gate opens with the key."},
+    {"unit_id": "north-1", "page_index": 1, "text": "The courier in the blue coat is Mira. If Nar asks, Mira gives Nar the key."}
+  ],
+  "graph": {
+    "nodes": [
+      {"id": "mira", "audience": "GM"},
+      {"id": "courier", "audience": "GM"},
+      {"id": "nar", "audience": "GM"},
+      {"id": "key", "audience": "GM"},
+      {"id": "gate", "audience": "GM"}
+    ],
+    "edges": [
+      {"id": "e1", "source": "courier", "target": "mira", "kind": "same_person", "reviewed": true, "evidence": [{"unit_id": "north-0", "page_index": 0, "quote": "Mira hides a brass key"}, {"unit_id": "north-1", "page_index": 1, "quote": "The courier in the blue coat is Mira"}]},
+      {"id": "e2", "source": "mira", "target": "nar", "kind": "conditional_gives", "condition": "Nar asks", "evidence": [{"unit_id": "north-1", "page_index": 1, "quote": "If Nar asks, Mira gives Nar the key"}]},
+      {"id": "e3", "source": "nar", "target": "key", "kind": "receives", "condition": "Nar asks", "evidence": [{"unit_id": "north-1", "page_index": 1, "quote": "Mira gives Nar the key"}]},
+      {"id": "e4", "source": "key", "target": "gate", "kind": "opens", "evidence": [{"unit_id": "north-0", "page_index": 0, "quote": "The north gate opens with the key"}]}
+    ]
+  }
+}
