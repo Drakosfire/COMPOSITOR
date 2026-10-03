@@ -1,0 +1,8 @@
+{
+  "title": "Project-authored conditional disclosure fixture",
+  "units": [
+    {"unit_id": "mill-1", "page_index": 0, "text": "If Nar opens the north gate, Mira reveals the hidden path. A cloaked visitor introduces itself as the mill guide."},
+    {"unit_id": "mill-2", "page_index": 1, "text": "The mill guide wants a brass key. He gives Nar a map."},
+    {"unit_id": "mill-3", "page_index": 1, "text": "The weather turns cold and the mill wheel creaks."}
+  ]
+}
