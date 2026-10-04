@@ -1,6 +1,6 @@
 # Record 34 — Scene contribution to card projection lab
 
-Status: author-local development witness, pending PRIME review. This is a bounded COMPOSITOR representation and deterministic read path. DungeonMind owns durable source admission, graph revisions and evidence reads; Buddy owns the DOGFOOD card surface. Neither owner contract changes here.
+Status: merged development lab witness in PR #40 at merge `5de15a66e43a90eb8ecf6d9833147f2758f170d6` (reviewed head `62816b8eb86128c9d1d9830e0f29a200c1562bfc`). PRIME independently reviewed the cumulative diff, full suite, three rendered source pages, and exact private replay; the three review holds were cleared for this bounded scope. This is a bounded COMPOSITOR representation and deterministic read path. DungeonMind owns durable source admission, graph revisions and evidence reads; Buddy owns the DOGFOOD card surface. Neither owner contract changes here.
 
 ## Input and authority
 
