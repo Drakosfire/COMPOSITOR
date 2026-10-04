@@ -1,0 +1,13 @@
+{
+  "format_version": 1,
+  "synthetic_source": "A traveler reaches the lantern bridge. The keeper offers a safe crossing. The eastern path is blocked.",
+  "unit_id": "bridge-opening",
+  "claims": [
+    {"id": "situation", "kind": "situation", "lens": "situation", "state": "source_supported", "audience": "GM", "text": "A traveler reaches the lantern bridge.", "evidence": [{"unit_id": "bridge-opening", "page_index": 0, "quote": "A traveler reaches the lantern bridge."}], "review": {"reviewer": "synthetic-fixture", "decision": "accepted", "rationale": "Direct sentence in synthetic source."}},
+    {"id": "offer", "kind": "action", "lens": "do_now", "state": "source_supported", "audience": "GM", "text": "The keeper offers a safe crossing.", "evidence": [{"unit_id": "bridge-opening", "page_index": 0, "quote": "The keeper offers a safe crossing."}], "review": {"reviewer": "synthetic-fixture", "decision": "accepted", "rationale": "Direct sentence in synthetic source."}},
+    {"id": "blocked", "kind": "condition", "lens": "relevant", "state": "source_supported", "audience": "GM", "text": "The eastern path is blocked.", "evidence": [{"unit_id": "bridge-opening", "page_index": 0, "quote": "The eastern path is blocked."}], "review": {"reviewer": "synthetic-fixture", "decision": "accepted", "rationale": "Direct sentence in synthetic source."}},
+    {"id": "color", "kind": "consequence", "lens": "gm_only", "state": "proposed_connective", "audience": "GM", "text": "Ask how the party responds to the offer.", "review": {"reviewer": "synthetic-fixture", "decision": "proposed", "rationale": "Facilitation idea, not a source claim."}},
+    {"id": "rule", "kind": "reference", "lens": "missing_reference", "state": "unresolved", "audience": "GM", "reason": "No exact crossing rule is present.", "review": {"reviewer": "synthetic-fixture", "decision": "unresolved", "rationale": "Synthetic source has no mechanics."}}
+  ],
+  "choices": [{"id": "accept-offer", "mode": "optional", "noncombat": true, "action_claim": "offer", "conditions": ["blocked"], "consequences": ["color"]}]
+}
