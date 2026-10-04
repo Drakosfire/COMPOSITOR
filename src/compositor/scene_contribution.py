@@ -12,7 +12,7 @@ from pathlib import Path
 import re
 from typing import Any
 
-from .package import CompositionError
+from .package import CompositionError, JsonPackageStore
 
 _HEX = re.compile(r"^[0-9a-f]{64}$")
 _STATES = {"source_supported", "proposed_connective", "unresolved"}
@@ -39,7 +39,11 @@ def load_pinned_context(*, source_path: Path, source_sha256: str,
             raise CompositionError("pinned source or manifest changed")
     _digest(package_revision, "package revision")
     manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
-    package = json.loads(Path(package_path).read_text(encoding="utf-8"))
+    package_path = Path(package_path)
+    if package_path.name != f"{package_revision}.json" or package_path.parent.name != package_id:
+        raise CompositionError("package path differs from exact reference")
+    package = JsonPackageStore(package_path.parent.parent).load(
+        {"package_id": package_id, "revision": package_revision})
     if manifest.get("source_pdf_sha256") != source_sha256:
         raise CompositionError("manifest source identity mismatch")
     if package.get("package_id") != package_id or package.get("revision") != package_revision:
@@ -54,10 +58,19 @@ def load_pinned_context(*, source_path: Path, source_sha256: str,
         data = json.loads(Path(path).read_text(encoding="utf-8"))
         if data.get("gates_passed") is not True:
             raise CompositionError("Stage B gate failed")
-        for unit in data.get("units", []):
+        for index, unit in enumerate(data.get("units", [])):
             uid, text = unit.get("unit_id"), unit.get("text")
             if not isinstance(uid, str) or not uid or uid in units or not isinstance(text, str):
                 raise CompositionError("invalid or duplicate evidence unit")
+            resource = package["resources"].get(uid)
+            origin = resource.get("origin", {}) if isinstance(resource, dict) else {}
+            if (not resource or resource.get("text") != text or
+                    origin.get("type") != "source" or
+                    origin.get("source_id") != f"sha256:{source_sha256}" or
+                    origin.get("page_index") != page or
+                    origin.get("locator") !=
+                    f"rules_ingestion_ab/page-{page}/stageB.evidence_units.json#/units/{index}"):
+                raise CompositionError("evidence unit is not in pinned package/source lineage")
             units[uid] = {"page_index": page, "text": text}
     if not isinstance(package_id, str) or not package_id:
         raise CompositionError("package id required")
@@ -102,6 +115,10 @@ def validate_contribution(contribution: dict[str, Any], context: dict[str, Any])
             raise CompositionError("invalid lens, kind or authority state")
         if claim.get("audience") not in {"GM", "PLAYER"}:
             raise CompositionError("claim audience required")
+        if claim["lens"] == "gm_only" and claim["audience"] != "GM":
+            raise CompositionError("GM-only lens cannot be player audience")
+        if claim["audience"] == "PLAYER" and claim.get("disclosure") != "reviewed_player_safe":
+            raise CompositionError("player claim needs deliberate player-safe review")
         review = claim.get("review")
         if (not isinstance(review, dict) or not isinstance(review.get("reviewer"), str) or
                 not review["reviewer"] or not isinstance(review.get("rationale"), str) or
@@ -112,9 +129,8 @@ def validate_contribution(contribution: dict[str, Any], context: dict[str, Any])
             if review.get("decision") != "accepted" or not isinstance(claim.get("text"), str) or not claim["text"].strip():
                 raise CompositionError("source claim needs accepted review and text")
             _citations(claim.get("evidence"), context)
-            if claim["lens"] == "read_aloud" and (claim["audience"] != "PLAYER" or
-                    claim.get("disclosure") != "reviewed_player_safe"):
-                raise CompositionError("read-aloud needs deliberate player-safe review")
+            if claim["lens"] == "read_aloud" and claim["audience"] != "PLAYER":
+                raise CompositionError("read-aloud needs player audience")
         elif state == "proposed_connective":
             if (review.get("decision") != "proposed" or not isinstance(claim.get("text"), str) or
                     not claim["text"].strip() or claim.get("evidence")):

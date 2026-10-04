@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from compositor.package import CompositionError
+from compositor.package import CompositionError, JsonPackageStore, make_source_package
 from compositor.scene_contribution import load_pinned_context, readback_claim, validate_contribution
 
 FIXTURE = Path(__file__).resolve().parents[1] / "fixtures/public/adventure_graph/scene-card-cycle.json"
@@ -24,12 +24,18 @@ def lab(tmp_path):
     page_hash = _write(page, json.dumps({"gates_passed": True, "units": [{"unit_id": fixture["unit_id"], "text": fixture["synthetic_source"]}]}).encode())
     manifest = tmp_path / "manifest.json"
     manifest_hash = _write(manifest, json.dumps({"source_pdf_sha256": source_hash, "pages": [{"page_index": 0, "artifact_sha256": {"stageB.evidence_units.json": page_hash}}]}).encode())
-    package = tmp_path / "package.json"
-    package_hash = _write(package, json.dumps({"package_id": "synthetic", "revision": "a" * 64}).encode())
+    store = JsonPackageStore(tmp_path / "packages")
+    saved = make_source_package(store, package_id="synthetic", title="Synthetic bridge",
+        resources={fixture["unit_id"]: {"id": fixture["unit_id"], "kind": "evidence_prose",
+            "name": "Bridge", "text": fixture["synthetic_source"], "audience": "GM",
+            "origin": {"type": "source", "source_id": f"sha256:{source_hash}",
+                "page_index": 0, "locator": "rules_ingestion_ab/page-0/stageB.evidence_units.json#/units/0"}}})
+    package = store.path_for(saved["package_id"], saved["revision"])
+    package_hash = sha256(package.read_bytes()).hexdigest()
     args = dict(source_path=source, source_sha256=source_hash, manifest_path=manifest,
                 manifest_sha256=manifest_hash, page_files={0: (page, page_hash)},
                 package_path=package, package_sha256=package_hash,
-                package_id="synthetic", package_revision="a" * 64)
+                package_id="synthetic", package_revision=saved["revision"])
     context = load_pinned_context(**args)
     contribution = {"id": "bridge", "source": {k: context[k] for k in ("source_sha256", "manifest_sha256", "package_sha256", "package_id", "package_revision")},
                     "claims": fixture["claims"], "choices": fixture["choices"]}
@@ -56,3 +62,22 @@ def test_pins_and_evidence_fail_visibly(tmp_path):
     bad["claims"][3]["state"] = "source_supported"
     with pytest.raises(CompositionError):
         validate_contribution(bad, context)
+
+
+def test_rejects_unrelated_and_tampered_package(tmp_path):
+    args, _, _ = lab(tmp_path)
+    package = args["package_path"]
+    content = json.loads(package.read_text())
+    content["resources"]["bridge-opening"]["origin"]["source_id"] = "sha256:" + "f" * 64
+    package.write_text(json.dumps(content))
+    args["package_sha256"] = sha256(package.read_bytes()).hexdigest()
+    with pytest.raises(CompositionError, match="integrity"):
+        load_pinned_context(**args)
+    content.pop("revision")
+    unrelated = JsonPackageStore(tmp_path / "other-packages")
+    saved = unrelated.save(content)
+    args["package_path"] = unrelated.path_for(saved["package_id"], saved["revision"])
+    args["package_sha256"] = sha256(args["package_path"].read_bytes()).hexdigest()
+    args["package_revision"] = saved["revision"]
+    with pytest.raises(CompositionError, match="lineage"):
+        load_pinned_context(**args)

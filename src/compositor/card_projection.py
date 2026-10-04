@@ -19,7 +19,8 @@ def project_card(contribution: dict[str, Any], context: dict[str, Any], *,
     if audience not in {"GM", "PLAYER"} or not isinstance(active_surface, str) or not active_surface.strip():
         raise CompositionError("audience and active surface required")
     validate_contribution(contribution, context)
-    visible = [claim for claim in contribution["claims"] if audience == "GM" or claim["audience"] == "PLAYER"]
+    visible = [claim for claim in contribution["claims"] if audience == "GM" or
+               (claim["audience"] == "PLAYER" and claim["lens"] != "gm_only")]
     by_id = {c["id"]: c for c in visible}
     lenses = {key: [] for key in _LENSES}
     for claim in visible:
@@ -29,13 +30,14 @@ def project_card(contribution: dict[str, Any], context: dict[str, Any], *,
              "evidence": readback_claim(claim, context)})
     choices = []
     for choice in contribution.get("choices", []):
-        if choice["action_claim"] not in by_id:
+        dependencies = choice.get("conditions", []) + choice.get("consequences", [])
+        if choice["action_claim"] not in by_id or any(ref not in by_id for ref in dependencies):
             continue
         choices.append({"id": choice["id"], "mode": "optional",
                         "noncombat": choice["noncombat"],
                         "action_claim": choice["action_claim"],
-                        "conditions": [x for x in choice.get("conditions", []) if x in by_id],
-                        "consequences": [x for x in choice.get("consequences", []) if x in by_id]})
+                        "conditions": list(choice.get("conditions", [])),
+                        "consequences": list(choice.get("consequences", []))})
     return {"format_version": 1, "contribution_id": contribution["id"],
             "source": contribution["source"], "audience": audience,
             "active_surface": active_surface, "lenses": lenses, "choices": choices,

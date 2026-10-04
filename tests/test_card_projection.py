@@ -32,3 +32,29 @@ def test_read_aloud_requires_explicit_review(tmp_path):
     claim["disclosure"] = "reviewed_player_safe"
     player = project_card(contribution, context, audience="PLAYER", active_surface="Playing")
     assert [c["id"] for c in player["lenses"]["read_aloud"]] == ["situation"]
+
+
+def test_mixed_audience_choice_never_loses_conditions_or_consequences(tmp_path):
+    _, context, contribution = lab(tmp_path)
+    offer, condition, consequence = contribution["claims"][1:4]
+    offer["audience"] = "PLAYER"
+    offer["disclosure"] = "reviewed_player_safe"
+    player = project_card(contribution, context, audience="PLAYER", active_surface="Playing")
+    assert player["choices"] == []
+    condition["audience"] = "PLAYER"
+    condition["disclosure"] = "reviewed_player_safe"
+    player = project_card(contribution, context, audience="PLAYER", active_surface="Playing")
+    assert player["choices"] == []
+    consequence["lens"] = "relevant"
+    consequence["audience"] = "PLAYER"
+    consequence["disclosure"] = "reviewed_player_safe"
+    player = project_card(contribution, context, audience="PLAYER", active_surface="Playing")
+    assert player["choices"][0]["conditions"] == ["blocked"]
+    assert player["choices"][0]["consequences"] == ["color"]
+
+
+def test_gm_only_lens_rejects_player_label(tmp_path):
+    _, context, contribution = lab(tmp_path)
+    contribution["claims"][3]["audience"] = "PLAYER"
+    with pytest.raises(CompositionError, match="GM-only"):
+        project_card(contribution, context, audience="PLAYER", active_surface="Playing")
