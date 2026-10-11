@@ -163,7 +163,7 @@ def _evidence_prompt(case: dict[str, Any]) -> str:
     lines = ["Use only the source units below. Preserve uncertainty and source identity.",
              "Document: " + case["source_document_id"] + "; edition: " + case["edition"] +
              "; audience: " + case["audience"] + "; source SHA-256: " + case["source_sha256"],
-             "Return JSON with keys candidates (array), answer, source_unit_ids (array), outcome.",
+             "Return one JSON object with exactly keys candidates, answer, source_unit_ids, outcome. Each candidate has exactly candidate_id and claim, both strings; answer is a string; source_unit_ids contains only supplied IDs; outcome is one allowed value. No markdown or extra text.",
              "Outcomes: " + ", ".join(OUTCOMES) + ".", "Question: " + case["question"]]
     for item in case["evidence"]:
         lines.append("SOURCE_UNIT " + item["unit_id"] + "\n" + item["text"])
@@ -172,33 +172,98 @@ def _evidence_prompt(case: dict[str, Any]) -> str:
 
 def _decision_prompt(case: dict[str, Any], candidate: dict[str, Any]) -> str:
     return ("Make a typed decision using only these source units and candidate output. "
-            "Return JSON with keys outcome, selected_candidate_ids, source_unit_ids, rationale. "
+            "Return one JSON object only with exactly these fields: outcome, selected_candidate_ids (array), source_unit_ids (array), rationale (string). "
             "Allowed outcomes: " + ", ".join(OUTCOMES) + ".\n\n" +
             _evidence_prompt(case) + "\n\nFROZEN_CANDIDATE\n" +
             json.dumps(candidate, ensure_ascii=False, sort_keys=True))
 
 
-def _parsed_object(raw: str, required_key: str) -> dict[str, Any] | None:
-    decoder = json.JSONDecoder()
-    selected = None
-    for match in re.finditer(r"\{", raw):
-        try:
-            value, _ = decoder.raw_decode(raw[match.start():])
-        except json.JSONDecodeError:
-            continue
-        if isinstance(value, dict) and required_key in value:
-            selected = value
-    return selected
+def _assistant_body(path: Path) -> tuple[str | None, str | None]:
+    """Extract exactly one assistant frame from llama.cpp's -o transcript."""
+    if not path.exists():
+        return None, "missing_output_file"
+    raw = path.read_text(encoding="utf-8", errors="replace")
+    if raw.count("User:\n") != 1 or raw.count("Assistant:\n") != 1 or not raw.startswith("User:\n"):
+        return None, "ambiguous_or_missing_role_frame"
+    prefix, body = raw.split("\nAssistant:\n", 1)
+    if not prefix.startswith("User:\n") or "Assistant:\n" in body or "User:\n" in body:
+        return None, "ambiguous_role_frame"
+    return body.strip(), None
 
 
-def _call(plan: dict[str, Any], prompt: str, prompt_path: Path) -> dict[str, Any]:
+def _response_object(body: str | None) -> dict[str, Any] | None:
+    if body is None:
+        return None
+    text = body.strip()
+    if text.startswith("```json") and text.endswith("```"):
+        text = text[len("```json"): -len("```")].strip()
+    if not text.startswith("{"):
+        return None
+    def unique_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        value: dict[str, Any] = {}
+        for key, item in pairs:
+            if key in value:
+                raise ValueError("duplicate JSON key")
+            value[key] = item
+        return value
+    try:
+        value = json.loads(text, object_pairs_hook=unique_keys)
+    except (json.JSONDecodeError, ValueError):
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def _parse_generation(body: str | None, allowed_units: set[str]) -> dict[str, Any] | None:
+    value = _response_object(body)
+    if not isinstance(value, dict) or set(value) != {"candidates", "answer", "source_unit_ids", "outcome"}:
+        return None
+    candidates, answer, units, outcome = (value["candidates"], value["answer"],
+                                           value["source_unit_ids"], value["outcome"])
+    if not isinstance(candidates, list) or not isinstance(answer, str) or not answer.strip():
+        return None
+    if not isinstance(units, list) or any(not isinstance(unit, str) for unit in units):
+        return None
+    if len(units) != len(set(units)) or not set(units).issubset(allowed_units) or outcome not in OUTCOMES:
+        return None
+    candidate_ids = set()
+    for item in candidates:
+        if (not isinstance(item, dict) or set(item) != {"candidate_id", "claim"}
+                or not isinstance(item["candidate_id"], str) or not item["candidate_id"].strip()
+                or not isinstance(item["claim"], str) or not item["claim"].strip()
+                or item["candidate_id"] in candidate_ids):
+            return None
+        candidate_ids.add(item["candidate_id"])
+    return value
+
+
+def _parse_decision(body: str | None, *, candidate_ids: set[str],
+                    allowed_units: set[str]) -> dict[str, Any] | None:
+    value = _response_object(body)
+    if not isinstance(value, dict) or set(value) != {"outcome", "selected_candidate_ids", "source_unit_ids", "rationale"}:
+        return None
+    selected, units = value["selected_candidate_ids"], value["source_unit_ids"]
+    if value["outcome"] not in OUTCOMES or not isinstance(value["rationale"], str) or not value["rationale"].strip():
+        return None
+    if (not isinstance(selected, list) or any(not isinstance(item, str) for item in selected)
+            or len(selected) != len(set(selected)) or not set(selected).issubset(candidate_ids)):
+        return None
+    if (not isinstance(units, list) or any(not isinstance(item, str) for item in units)
+            or len(units) != len(set(units)) or not set(units).issubset(allowed_units)):
+        return None
+    return value
+
+
+def _call(plan: dict[str, Any], prompt: str, prompt_path: Path, output_path: Path) -> dict[str, Any]:
     settings = plan["settings"]
     prompt_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     descriptor = os.open(prompt_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
         stream.write(prompt)
+    output_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    output_descriptor = os.open(output_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    os.close(output_descriptor)
     command = [plan["backend_path"], "--offline", "-m", plan["model_path"],
-               "-f", str(prompt_path), "-n", str(settings["output_tokens"]), "-c",
+               "-f", str(prompt_path), "-o", str(output_path), "-n", str(settings["output_tokens"]), "-c",
                str(settings["context_tokens"]), "-ngl", str(settings["gpu_layers"]),
                "-s", str(settings["seed"]), "--temp", "0", "--single-turn",
                "--simple-io", "--no-display-prompt"]
@@ -207,19 +272,27 @@ def _call(plan: dict[str, Any], prompt: str, prompt_path: Path) -> dict[str, Any
     try:
         result = subprocess.run(command, capture_output=True, text=True,
                                 timeout=settings["deadline_seconds"], env=environment)
+        body, frame_error = _assistant_body(output_path)
         return {"status": "completed" if result.returncode == 0 else "backend_failed",
                 "exit_code": result.returncode, "stdout": result.stdout, "stderr": result.stderr,
+                "assistant_body": body, "assistant_frame_error": frame_error,
+                "output_file_sha256": digest(output_path),
                 "wall_seconds": time.monotonic() - start, "prompt_sha256": sha256(prompt.encode()).hexdigest(),
                 "command": command}
     except subprocess.TimeoutExpired as error:
         def decoded(value: str | bytes | None) -> str:
             return value.decode(errors="replace") if isinstance(value, bytes) else (value or "")
+        body, frame_error = _assistant_body(output_path)
         return {"status": "timeout", "exit_code": None, "stdout": decoded(error.stdout),
-                "stderr": decoded(error.stderr), "wall_seconds": time.monotonic() - start,
-                "prompt_sha256": sha256(prompt.encode()).hexdigest(),
-                "command": command}
+                "stderr": decoded(error.stderr), "assistant_body": body,
+                "assistant_frame_error": frame_error, "output_file_sha256": digest(output_path),
+                "wall_seconds": time.monotonic() - start,
+                "prompt_sha256": sha256(prompt.encode()).hexdigest(), "command": command}
     except OSError as error:
+        body, frame_error = _assistant_body(output_path)
         return {"status": "backend_failed", "exit_code": None, "stdout": "", "stderr": str(error),
+                "assistant_body": body, "assistant_frame_error": frame_error,
+                "output_file_sha256": digest(output_path),
                 "wall_seconds": time.monotonic() - start, "prompt_sha256": sha256(prompt.encode()).hexdigest(),
                 "command": command}
 
@@ -243,10 +316,13 @@ def run_trial(manifest_path: Path, *, private_root: Path, run_dir: Path) -> dict
         if stop_reason:
             candidates[case["id"]] = {"status": "skipped_after_backend_failure"}
             continue
-        result = _call(plan, _evidence_prompt(case), run_dir / "prompts" / f"{len(calls) + 1:02d}-{case['id']}-generate.txt")
+        call_id = f"{len(calls) + 1:02d}-{case['id']}-generate"
+        result = _call(plan, _evidence_prompt(case), run_dir / "prompts" / f"{call_id}.txt",
+                       run_dir / "assistant" / f"{call_id}.txt")
         _write_new(run_dir / "calls" / f"{len(calls) + 1:02d}-{case['id']}-generate.json", result)
         calls.append({"case_id": case["id"], "phase": "generate", "status": result["status"]})
-        candidate = _parsed_object(result["stdout"], "candidates") if result["status"] == "completed" else None
+        allowed_units = {item["unit_id"] for item in case["evidence"]}
+        candidate = _parse_generation(result.get("assistant_body"), allowed_units) if result["status"] == "completed" else None
         candidates[case["id"]] = {"status": "parsed" if candidate is not None else
                                    ("invalid_output" if result["status"] == "completed" else result["status"]),
                                    "candidate": candidate}
@@ -261,13 +337,17 @@ def run_trial(manifest_path: Path, *, private_root: Path, run_dir: Path) -> dict
             decisions[case["id"]] = {"status": "skipped_after_backend_failure" if stop_reason else
                                      "skipped_invalid_candidate"}
             continue
+        call_id = f"{len(calls) + 1:02d}-{case['id']}-decide"
         result = _call(plan, _decision_prompt(case, candidate["candidate"]),
-                       run_dir / "prompts" / f"{len(calls) + 1:02d}-{case['id']}-decide.txt")
+                       run_dir / "prompts" / f"{call_id}.txt",
+                       run_dir / "assistant" / f"{call_id}.txt")
         _write_new(run_dir / "calls" / f"{len(calls) + 1:02d}-{case['id']}-decide.json", result)
         calls.append({"case_id": case["id"], "phase": "decide", "status": result["status"]})
-        value = _parsed_object(result["stdout"], "outcome") if result["status"] == "completed" else None
-        if value is not None and value.get("outcome") not in OUTCOMES:
-            value = None
+        allowed_units = {item["unit_id"] for item in case["evidence"]}
+        candidate_ids = {item["candidate_id"] for item in candidate["candidate"]["candidates"]}
+        value = (_parse_decision(result.get("assistant_body"), candidate_ids=candidate_ids,
+                                 allowed_units=allowed_units)
+                 if result["status"] == "completed" else None)
         decisions[case["id"]] = {"status": "parsed" if value is not None else
                                   ("invalid_output" if result["status"] == "completed" else result["status"]),
                                   "decision": value}

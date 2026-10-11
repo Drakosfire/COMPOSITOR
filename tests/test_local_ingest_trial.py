@@ -18,7 +18,7 @@ def digest(path: Path) -> str:
 
 
 class LocalIngestTrialTest(unittest.TestCase):
-    def setup_plan(self, private: Path, *, failed: bool = False) -> Path:
+    def setup_plan(self, private: Path, *, failed: bool = False, invalid_decision: bool = False) -> Path:
         source = private / "source.txt"
         source.write_text(FIXTURE["source_text"])
         evidence = private / "stageB.evidence_units.json"
@@ -29,13 +29,17 @@ class LocalIngestTrialTest(unittest.TestCase):
         backend.write_text("#!/usr/bin/python3\n"
                            "import json, sys\n"
                            "prompt = open(sys.argv[sys.argv.index('-f') + 1]).read()\n"
-                           "print(prompt)  # llama-cli may echo private prompt before completion\n"
+                           "output = sys.argv[sys.argv.index('-o') + 1]\n"
+                           "unit = next(line.split()[1] for line in prompt.splitlines() if line.startswith('SOURCE_UNIT '))\n"
+                           "print(prompt)  # stdout echo must never be parsed\n"
+                           "frame = 'User:\\n' + prompt + '\\n\\nAssistant:\\n'\n"
                            "if 'FROZEN_CANDIDATE' in prompt:\n"
-                           "    print(json.dumps({'outcome': 'resolved', 'source_unit_ids': []}))\n"
+                           "    answer = 'not JSON' if " + repr(invalid_decision) + " else {'outcome': 'resolved', 'selected_candidate_ids': ['c1'], 'source_unit_ids': [unit], 'rationale': 'synthetic'}\n"
                            "elif 'keeper' in prompt and " + repr(failed) + ":\n"
-                           "    print('synthetic backend failure', file=sys.stderr); sys.exit(17)\n"
+                           "    open(output, 'w').write(frame); print('synthetic backend failure', file=sys.stderr); sys.exit(17)\n"
                            "else:\n"
-                           "    print(json.dumps({'candidates': [{'id': 'one'}], 'answer': 'synthetic', 'outcome': 'resolved'}))\n")
+                           "    answer = {'candidates': [{'candidate_id': 'c1', 'claim': 'synthetic'}], 'answer': 'synthetic', 'source_unit_ids': [unit], 'outcome': 'resolved'}\n"
+                           "with open(output, 'w') as stream: stream.write(frame + (answer if isinstance(answer, str) else json.dumps(answer)))\n")
         backend.chmod(0o700)
         cases = []
         for item in FIXTURE["questions"]:
@@ -74,9 +78,11 @@ class LocalIngestTrialTest(unittest.TestCase):
             first_call = json.loads(sorted((run / "calls").glob("*.json"))[0].read_text())
             self.assertIn("--offline", first_call["command"])
             self.assertIn("-f", first_call["command"])
+            self.assertIn("-o", first_call["command"])
             self.assertEqual((run / "prompts" / "01-synthetic_lantern-generate.txt").stat().st_mode & 0o777, 0o600)
             self.assertEqual(summary["decisions"]["synthetic_lantern"]["status"], "parsed")
-            self.assertEqual(summary["decisions"]["synthetic_lantern"]["decision"]["source_unit_ids"], [])
+            self.assertEqual(summary["decisions"]["synthetic_lantern"]["decision"]["source_unit_ids"],
+                             ["1111111111111111111111111111111111111111111111111111111111111111"])
             with self.assertRaises(FileExistsError):
                 run_trial(path, private_root=private, run_dir=run)
             manifest = json.loads(path.read_text())
@@ -103,6 +109,61 @@ class LocalIngestTrialTest(unittest.TestCase):
             calls = list((run / "calls").glob("*.json"))
             self.assertEqual(len(calls), 2)
             self.assertTrue(any("synthetic backend failure" in p.read_text() for p in calls))
+
+    def test_echoed_candidate_cannot_rescue_invalid_decision(self) -> None:
+        with TemporaryDirectory() as temp:
+            private = Path(temp)
+            path = self.setup_plan(private, invalid_decision=True)
+            result = run_trial(path, private_root=private, run_dir=private / "runs" / "invalid")
+            run = Path(result["run_dir"])
+            summary = json.loads((run / "summary.json").read_text())
+            decision = summary["decisions"]["synthetic_lantern"]
+            self.assertEqual(decision["status"], "invalid_output")
+            self.assertIsNone(decision["decision"])
+            call = json.loads((run / "calls" / "03-synthetic_lantern-decide.json").read_text())
+            self.assertIn('"outcome": "resolved"', call["stdout"])
+            self.assertEqual(call["assistant_body"], "not JSON")
+            self.assertEqual(summary["case_count"], 2)
+            self.assertEqual(summary["scheduled_calls"], 4)
+
+    def test_prompt_echo_and_malformed_assistant_output_fail_closed(self) -> None:
+        from compositor.local_ingest_trial import _assistant_body, _parse_decision, _parse_generation
+        units = {"1111111111111111111111111111111111111111111111111111111111111111"}
+        echoed_candidate = ('User:\nFROZEN_CANDIDATE\n{"outcome":"resolved",'
+                            '"selected_candidate_ids":[],"source_unit_ids":[],"rationale":"echo"}'
+                            '\n\nAssistant:\nnot JSON')
+        with TemporaryDirectory() as temp:
+            path = Path(temp) / "output.txt"
+            path.write_text(echoed_candidate)
+            body, error = _assistant_body(path)
+            self.assertIsNone(error)
+            self.assertIsNone(_parse_decision(body, candidate_ids=set(), allowed_units=units))
+            path.write_text('User:\nsource echoes {"candidates":[],"answer":"fake",'
+                            '"source_unit_ids":[],"outcome":"resolved"}\n\nAssistant:\nnot JSON')
+            body, error = _assistant_body(path)
+            self.assertIsNone(error)
+            self.assertIsNone(_parse_generation(body, units))
+            path.write_text('User:\nsource includes Assistant:\n as ordinary text\n\nAssistant:\n{"outcome":"resolved"}')
+            body, error = _assistant_body(path)
+            self.assertIsNone(body)
+            self.assertEqual(error, "ambiguous_or_missing_role_frame")
+        valid_candidate = ('```json\n{"candidates":[{"candidate_id":"c1","claim":"supported"}],'
+                           '"answer":"answer","source_unit_ids":["' + next(iter(units)) + '"],'
+                           '"outcome":"resolved"}\n```')
+        self.assertIsNotNone(_parse_generation(valid_candidate, units))
+        self.assertIsNone(_parse_generation(valid_candidate + ' {"outcome":"resolved"}', units))
+        malformed = ('{"candidates":[{"id":"wrong-shape"}],"answer":"answer",'
+                     '"source_unit_ids":[],"outcome":"resolved"}')
+        self.assertIsNone(_parse_generation(malformed, units))
+        bad_decision = ('{"outcome":"resolved","selected_candidate_ids":["missing"],'
+                        '"source_unit_ids":[],"rationale":"invalid citation target"}')
+        self.assertIsNone(_parse_decision(bad_decision, candidate_ids={"c1"}, allowed_units=units))
+        nested_decision = ('{"outcome":"resolved","selected_candidate_ids":[],"source_unit_ids":[], '
+                           '"rationale":{"outcome":"resolved"}}')
+        self.assertIsNone(_parse_decision(nested_decision, candidate_ids=set(), allowed_units=units))
+        duplicate_field = ('{"outcome":"unresolved","outcome":"resolved",'
+                           '"selected_candidate_ids":[],"source_unit_ids":[],"rationale":"duplicate"}')
+        self.assertIsNone(_parse_decision(duplicate_field, candidate_ids=set(), allowed_units=units))
 
     def test_caps_and_private_root(self) -> None:
         with TemporaryDirectory() as temp:
