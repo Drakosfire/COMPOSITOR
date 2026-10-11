@@ -1,0 +1,23 @@
+{
+  "format_version": 1,
+  "description": "Synthetic-only LOCAL-INGEST-001 harness fixture; no corpus bytes, gold, or provider credentials.",
+  "source_text": "Invented field notes for a synthetic test.",
+  "units": [
+    {
+      "unit_id": "1111111111111111111111111111111111111111111111111111111111111111",
+      "text": "A blue lantern stands beside the invented mill.",
+      "structural_path": ["Synthetic Mill"],
+      "anomaly_flags": []
+    },
+    {
+      "unit_id": "2222222222222222222222222222222222222222222222222222222222222222",
+      "text": "The invented keeper visits only after sunset.",
+      "structural_path": ["Synthetic Mill"],
+      "anomaly_flags": []
+    }
+  ],
+  "questions": [
+    {"id": "synthetic_lantern", "question": "Where is the blue lantern?", "unit_id": "1111111111111111111111111111111111111111111111111111111111111111"},
+    {"id": "synthetic_keeper", "question": "When does the keeper visit?", "unit_id": "2222222222222222222222222222222222222222222222222222222222222222"}
+  ]
+}
