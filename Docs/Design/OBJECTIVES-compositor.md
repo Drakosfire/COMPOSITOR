@@ -2,7 +2,7 @@
 
 Status: operator-established direction; acceptance design for review. Capabilities below are objectives, not implemented behavior.
 
-The [Composition contract and assembly process](CONTRACT-composition.md) is the accepted semantic baseline for packages. Source and adapted packages, selectable dependency bundling, both save forms, reviewed dependent updates, and usable drafts are settled decisions. Readiness remains separate for each intended use.
+The [Composition contract and assembly process](CONTRACT-composition.md) is the accepted semantic baseline for packages. A Composition preserves source content, meaningful structure, relationships, and media with traceable provenance, supporting selection, grounded interaction, and explicit adaptation. Source and adapted packages, selectable dependency bundling, both save forms, reviewed dependent updates, usable drafts, and an image primitive from the outset are settled decisions. Readiness remains separate for each intended use.
 
 ## Purpose and ownership
 
@@ -10,7 +10,7 @@ COMPOSITOR owns ingestion and processing: taking supplied documents through fait
 
 The operator's current direction extends the initial repository-foundation scope and earlier proposed lab mandate. Existing research and implementations are the starting assets. Moving maintained RulesIngestion components or replacing existing ingestions requires an explicit transition with their current owners; it does not require abandoning the broader COMPOSITOR objective.
 
-GenerationEngine retains shared provider execution. DungeonMind owns durable Adventure/Rules spaces, exact source admission, governed graph revisions, and revision-pinned evidence reads; WorldKeeper owns governed World publication. Buddy retains product surfaces. COMPOSITOR supplies reviewed contribution candidates, selection/export representations, and bindings through the appropriate contracts. Its private experiment store is replay-only, not graph authority. Rules Lawyer is a consumer/component and possibly a future Surface; its eventual UI location is open.
+GenerationEngine retains shared provider execution. DungeonMind owns durable knowledge/storage/publication, Adventure/Rules spaces, exact source admission, governed graph revisions, and revision-pinned evidence reads; WorldKeeper coordinates governed World changes. Buddy retains product surfaces and the Worldbuilding, Planning, and Playing projections over shared knowledge. COMPOSITOR supplies reviewed contribution candidates, selection/export representations, and bindings through the appropriate contracts. Its private experiment store is replay-only, not graph authority. Rules Lawyer is a consumer/component and possibly a future Surface; its eventual UI location is open.
 
 ## Success from the user's perspective
 
@@ -58,6 +58,14 @@ Database selection, deployment, retention, and the exact schema remain design de
 
 Use separate benchmarks for *Of Conks & Cons* and *A Wild Sheep Chase*. Each receives its own gold author and iterative source-grounded parent review. The [benchmark protocol](BENCHMARKS-one-shots.md) defines independence, freeze, acceptance, and regression handling.
 
+Construct golden Compositions as the reference destination for processing recipes and stacks of models. Require two independent witnesses: faithful reconstruction of source content, meaning, and organization; and completion of declared consumer tasks. Bidirectional source/representation traceability exposes omissions. Equivalent encodings and phrasing are acceptable when the required content, relationships, provenance, and behavior agree. Source, adaptation, selection, and dependency cases belong in gold.
+
+Prepared personal material and organized published material of varied types/forms are available. Source acquisition is not the next gate. Select representative sections, pin their exact evidence and media, and report source types separately. The next proposed unit is one complete reviewed section with text, relationships, and an image, covering reconstruction, planning, grounded query, adaptation, selection, and both save forms/reload. Section choice, gold review, consumer contracts, thresholds, and run scope remain to be pinned at separate activation.
+
+For this next experiment, **OCR is out of scope**. The operator considers prior DeepSeek OCR 2 recovery excellent with few observed errors; use existing prepared text and extracted images. Preserve original extraction provenance and observed defects without reopening OCR selection, scoring, or recovery runs. Historical recovery records remain evidence. Exact image/source occurrence and availability still require verification for the Composition.
+
+The architecture is bring-your-own-model. COMPOSITOR owns domain prompts, schemas, context assembly, processing recipes, and evaluation; GenerationEngine owns reusable API/local execution, adapters, provider/model resolution, and receipts. Its [current contract](https://github.com/Drakosfire/GenerationEngine/blob/128710668369b73beff78ea0e4377ec252cd04e4/docs/CORE-CONTRACT.md) and [implementation reference](https://github.com/Drakosfire/GenerationEngine/blob/128710668369b73beff78ea0e4377ec252cd04e4/docs/CURRENT-STATE.md) already include OpenAI/OpenRouter text, TypeSafe typed decisions, and Fal images. Local inference integration remains an owner-scoped gap. Each comparison pins models, stages, prompts, evidence, settings, and total call/repair cost before execution; no ecosystem default model or fixed baseline roster is selected here.
+
 The public fixture is a reproducibility aid. The two actual adventures are the primary capability witnesses. A composition scenario exercises both packages with Eldyrwild and a blank World, including scoped queries, adaptation, audience boundaries, and unload behavior.
 
 High quality may include disclosed imperfections. Gold should be trustworthy within its declared scope, with explicit ambiguity and acceptable alternatives. Product results must distinguish critical defects, material repair, and minor limitations. Do not demand invented certainty from either gold or ingestion.
@@ -71,8 +79,8 @@ Repeated tuning on two adventures demonstrates competence on those benchmarks. R
 The [draft Composition PR stack](../Roadmaps/ROADMAP-composition-pr-stack.md) groups these capability gates into proposed reviewable PR bites and handoffs. It does not replace the acceptance objectives or activate future work.
 
 1. **Freeze the evaluation contract.** Identify both exact sources, enumerate Worldbuilding/Planning/Playing tasks, define expected output categories and defect severity, and settle the private storage choice. Resolve source handling and experiment budgets before affected runs.
-2. **Establish reviewed gold.** Assign one author per one-shot. Parent review checks source claims, omissions, alternatives, and audience assumptions. Iterate until no known defect invalidates declared benchmark scope, then freeze each suite independently.
-3. **Deliver a reproducible ingestion path.** Reuse prior research and tooling; establish exact input, resource, persistence, and replay contracts. Preserve and score first-run results for each adventure. Diagnose evidence recovery, semantic interpretation, assembly, and interaction failures separately.
+2. **Establish reviewed golden Compositions.** Begin with the proposed complete section. Assign one author per one-shot as coverage grows. Direct source review checks reconstruction, omissions, relationships, alternatives, audience, adaptations, and task expectations. Iterate until no known defect invalidates declared scope, then freeze each suite independently.
+3. **Deliver a reproducible processing path.** Compare recorded model stacks over the same prepared evidence and golden expectations. Establish exact resource, persistence, and replay contracts; preserve first-run results and diagnose interpretation, assembly, and interaction failures separately. The next experiment uses existing recovery artifacts; later end-to-end recovery work requires its own scope.
 4. **Reach useful package quality.** Improve the pipeline against the separate suites, retaining earlier results and reporting repair effort. Demonstrate the named Worldbuilding, Planning, and Playing tasks with explicit remaining gaps.
 5. **Demonstrate composition and interaction.** Load either/both packages, Eldyrwild, and a blank World; perform scoped and combined queries; add adaptations; unload and reload. Validate at the real graph/product boundary rather than substituting helper-only tests.
 6. **Prove shared rule interaction.** Ingest the needed rules, bind exact definitions, and show consistent statblock and Rules Lawyer retrieval, including amendments and stale/missing behavior. Integrate this with the workflow witnesses. When the Rules track begins, also run a separately owned, bounded Drools execution witness through RulesEngine or an agreed adapter. Record its rule/fact revisions, result provenance, limits, and failures; it does not select a production engine.
@@ -82,10 +90,10 @@ These are capability gates, not a fixed number of PRs or a calendar commitment. 
 
 ## Open choices
 
-- Exact source revisions and extraction provenance for both selected one-shots; do not silently substitute another edition, a synthetic fixture, or an unrelated campaign recap.
+- Selection of the next complete section and its exact source/evidence/media revisions; verify existing source manifests and freeze records rather than treating available corpus as unacquired. Do not silently substitute another edition, a synthetic fixture, or an unrelated campaign recap.
 - Database/service and isolated experimental namespace.
 - Source-specific expected outcomes and named human review of workflow usefulness.
 - Numerical quality thresholds, practical repair tolerance, model treatments, and run budgets, frozen before scored runs.
 - Owner contracts for workspace activation, profile/admission semantics, graph projection, and production ingestion migration. The first Adventure witness requires a MIND-reviewed `SemanticProfileDescriptorV2` and MIND-minted space ID; cross-space joins and a contribution ledger are not assumed.
 
-Keep exact source inventories, readiness inspections, and private experiment evidence in the private benchmark store. Prior corpus work informs the design; completed COMPOSITOR benchmarks still need to be established.
+Keep exact source inventories, readiness inspections, and private experiment evidence in the private benchmark store. Existing source-fidelity gold, adjudications, and the provided-evidence pilot retain their declared scope. The new golden reconstruction and consumer witnesses still need to be established.
