@@ -1,5 +1,8 @@
 # COMPOSITOR
 
+For agent pickup, start with [AGENTS.md](AGENTS.md). Use the bounded assignment
+and its pinned authority to decide which proposed handoff is active.
+
 COMPOSITOR is an ingestion and processing program for making **portable, source-linked Compositions** from documents people bring themselves. Its goal is competent to better-than-good first ingestion into packages usable for **Worldbuilding, Planning, and Playing**. A package preserves resources, relationships, source identity, audience boundaries, adaptations, and explicit unresolved or unsupported material.
 
 The repository contains operating guidance, objectives, benchmark design, a deterministic Composition package kernel, an offline adapter for RulesIngestion evidence artifacts, and a private SQLite experiment ledger. These stores support research and replay. Full source evidence recovery has been piloted privately on both one-shots; task-level comparisons and production integrations remain future work.
